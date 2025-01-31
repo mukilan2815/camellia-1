@@ -1,0 +1,34 @@
+{
+    "getStarted": "शुरू करें",
+    "selectLanguage": "अपनी भाषा चुनें",
+    "next": "अगला",
+    "enterDetails": "अपनी जानकारी दर्ज करें",
+    "name": "नाम",
+    "phoneNumber": "फ़ोन नंबर",
+    "street": "सड़क",
+    "locality": "क्षेत्रीयता",
+    "administrativeArea": "प्रशासनिक क्षेत्र",
+    "city": "शहर",
+    "state": "राज्य",
+    "getOTP": "OTP प्राप्त करें",
+    "enterOTP": "OTP दर्ज करें",
+    "submit": "सबमिट करें",
+    "welcome": "स्वागत है, {{name}}!",
+    "phone": "फ़ोन",
+    "location": "स्थान",
+    "logout": "लॉगआउट",
+    "validationErrors": {
+      "nameRequired": "नाम आवश्यक है",
+      "phoneInvalid": "फ़ोन नंबर 10 अंकों का होना चाहिए",
+      "otpInvalid": "अमान्य OTP। कृपया पुनः प्रयास करें।"
+    },
+    "dialogs": {
+      "otpTitle": "OTP उत्पन्न हुआ",
+      "otpMessage": "आपका OTP है: {{otp}}",
+      "errorTitle": "त्रुटि",
+      "errorMessage": "{{message}}",
+      "ok": "ठीक है"
+    },
+    "loading": "लोड हो रहा है..."
+  }
+  

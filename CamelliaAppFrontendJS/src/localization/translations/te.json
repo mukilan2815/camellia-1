@@ -1,0 +1,27 @@
+{
+    "getStarted": "ప్రారంభించండి",
+    "selectLanguage": "మీ భాషను ఎంచుకోండి",
+    "next": "తర్వాత",
+    "enterDetails": "మీ వివరాలు నమోదు చేయండి",
+    "name": "పేరు",
+    "phoneNumber": "ఫోన్ నంబర్",
+    "street": "రోడ్",
+    "locality": "స్థానికత",
+    "administrativeArea": "పరిశాసన ప్రాంతం",
+    "city": "నగరం",
+    "state": "రాష్ట్రం",
+    "getOTP": "OTP పొందండి",
+    "enterOTP": "OTP నమోదు చేయండి",
+    "submit": "సమర్పించండి",
+    "welcome": "స్వాగతం, {{name}}!",
+    "phone": "ఫోన్",
+    "location": "స్థానం",
+    "logout": "లోగ్ అవుట్",
+    "validationErrors": {
+      "nameRequired": "పేరు అవసరం",
+      "phoneInvalid": "ఫోన్ నంబర్ 10 అంకెలలో ఉండాలి",
+      "otpInvalid": "చెల్లని OTP. దయచేసి మళ్లీ ప్రయత్నించండి."
+    },
+    "loading": "లోడ్ అవుతోంది..."
+  }
+  

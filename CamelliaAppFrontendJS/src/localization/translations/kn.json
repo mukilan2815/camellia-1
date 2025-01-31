@@ -1,0 +1,27 @@
+{
+    "getStarted": "ಪ್ರಾರಂಭಿಸು",
+    "selectLanguage": "ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    "next": "ಮುಂದೆ",
+    "enterDetails": "ನಿಮ್ಮ ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ",
+    "name": "ಹೆಸರು",
+    "phoneNumber": "ಫೋನ್ ಸಂಖ್ಯೆ",
+    "street": "ರಸ್ತೆ",
+    "locality": "ಸ್ಥಳೀಯತೆ",
+    "administrativeArea": "ನಿರ್ವಹಣಾ ಪ್ರದೇಶ",
+    "city": "ನಗರ",
+    "state": "ರಾಜ್ಯ",
+    "getOTP": "OTP ಪಡೆಯಿರಿ",
+    "enterOTP": "OTP ನಮೂದಿಸಿ",
+    "submit": "ಸಮರ್ಪಿಸಿ",
+    "welcome": "ಸ್ವಾಗತ, {{name}}!",
+    "phone": "ಫೋನ್",
+    "location": "ಸ್ಥಳ",
+    "logout": "ಲಾಗ್ ಔಟ್",
+    "validationErrors": {
+      "nameRequired": "ಹೆಸರು ಅಗತ್ಯವಿದೆ",
+      "phoneInvalid": "ಫೋನ್ ಸಂಖ್ಯೆ 10 ಅಂಕಗಳಲ್ಲಿ ಇರಬೇಕು",
+      "otpInvalid": "ಅಮಾನ್ಯ OTP. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+    },
+    "loading": "ಲೋಡ್ ಆಗುತ್ತಿದೆ..."
+  }
+  

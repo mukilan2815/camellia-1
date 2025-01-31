@@ -1,0 +1,27 @@
+{
+    "getStarted": "തുടങ്ങുക",
+    "selectLanguage": "നിങ്ങളുടെ ഭാഷ തിരഞ്ഞെടുക്കുക",
+    "next": "അടുത്തത്",
+    "enterDetails": "നിങ്ങളുടെ വിവരങ്ങൾ നൽകുക",
+    "name": "പേര്",
+    "phoneNumber": "ഫോൺ നമ്പർ",
+    "street": "തെരുവ്",
+    "locality": "പ്രാദേശികത",
+    "administrativeArea": "നിര്വാഹ മേഖല",
+    "city": "നഗരം",
+    "state": "സംസ്ഥാനം",
+    "getOTP": "OTP നേടുക",
+    "enterOTP": "OTP നൽകുക",
+    "submit": "സമർപ്പിക്കുക",
+    "welcome": "സ്വാഗതം, {{name}}!",
+    "phone": "ഫോൺ",
+    "location": "സ്ഥലം",
+    "logout": "ലോഗ് ഔട്ട്",
+    "validationErrors": {
+      "nameRequired": "പേര് ആവശ്യമാണ്",
+      "phoneInvalid": "ഫോൺ നമ്പർ 10 അങ്കങ്ങളിൽ ആയിരിക്കണം",
+      "otpInvalid": "അസാധുവായ OTP. ദയവായി വീണ്ടും ശ്രമിക്കുക."
+    },
+    "loading": "ലോഡുചെയ്യുന്നു..."
+  }
+  

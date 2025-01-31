@@ -1,0 +1,38 @@
+{
+  "enterDetails": "Enter Your Details",
+  "name": "Name",
+  "phoneNumber": "Phone Number",
+  "street": "Street",
+  "city": "City",
+  "country": "Country",
+  "postalCode": "Postal Code",
+  "submit": "Submit",
+  "validationErrors": {
+    "nameRequired": "Name is required.",
+    "phoneInvalid": "Enter a valid 10-digit phone number.",
+    "streetRequired": "Street is required.",
+    "cityRequired": "City is required.",
+    "countryRequired": "Country is required.",
+    "postalCodeRequired": "Postal Code is required.",
+    "coordinatesInvalid": "Invalid coordinates.",
+    "title": "Validation Error",
+    "message": "Please correct the highlighted fields."
+  },
+  "dialogs": {
+    "errorTitle": "Error",
+    "errorMessage": "{{message}}",
+    "ok": "OK"
+  },
+  "registrationSuccess": {
+    "title": "Success",
+    "message": "You have registered successfully."
+  },
+  "placeholders": {
+    "name": "Enter your full name",
+    "phoneNumber": "Enter your mobile number",
+    "street": "Street name or House number",
+    "city": "City / District",
+    "country": "Country",
+    "postalCode": "PIN / Zip Code"
+  }
+}

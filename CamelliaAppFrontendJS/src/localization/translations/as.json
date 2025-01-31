@@ -1,0 +1,27 @@
+{
+    "getStarted": "শুরু কৰক",
+    "selectLanguage": "আপোনাৰ ভাষা বাচনি কৰক",
+    "next": "পৰৱৰ্তী",
+    "enterDetails": "আপোনাৰ বিৱৰণ প্ৰৱিষ্ট কৰক",
+    "name": "নাম",
+    "phoneNumber": "ফোন নম্বৰ",
+    "street": "ৰাস্তা",
+    "locality": "স্থানীয়তা",
+    "administrativeArea": "প্ৰশাসনিক এলাকা",
+    "city": "চহৰ",
+    "state": "ৰাজ্য",
+    "getOTP": "OTP লাভ কৰক",
+    "enterOTP": "OTP প্ৰৱিষ্ট কৰক",
+    "submit": "দাখিল কৰক",
+    "welcome": "স্বাগতম, {{name}}!",
+    "phone": "ফোন",
+    "location": "অৱস্থান",
+    "logout": "লগ আউট",
+    "validationErrors": {
+      "nameRequired": "নাম প্ৰয়োজন",
+      "phoneInvalid": "ফোন নম্বৰ 10 সংখ্যাত হ’ব লাগিব",
+      "otpInvalid": "অবৈধ OTP। অনুগ্ৰহ কৰি পুনৰ চেষ্টা কৰক।"
+    },
+    "loading": "লোড হ’ব লাগিছে..."
+  }
+  

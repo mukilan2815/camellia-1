@@ -1,0 +1,27 @@
+{
+    "getStarted": "தொடங்குங்கள்",
+    "selectLanguage": "உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்",
+    "next": "அடுத்தது",
+    "enterDetails": "உங்கள் விவரங்களை உள்ளிடவும்",
+    "name": "பெயர்",
+    "phoneNumber": "தொலைபேசி எண்",
+    "street": "தெரு",
+    "locality": "உள்ளாட்சி",
+    "administrativeArea": "நிர்வாக பகுதி",
+    "city": "நகரம்",
+    "state": "மாநிலம்",
+    "getOTP": "OTP பெறுக",
+    "enterOTP": "OTP உள்ளிடவும்",
+    "submit": "சமர்ப்பிக்கவும்",
+    "welcome": "வரவேற்பு, {{name}}!",
+    "phone": "தொலைபேசி",
+    "location": "இடம்",
+    "logout": "வெளியேறு",
+    "validationErrors": {
+      "nameRequired": "பெயர் தேவை",
+      "phoneInvalid": "தொலைபேசி எண் 10 இலக்கங்களாக இருக்க வேண்டும்",
+      "otpInvalid": "தவறான OTP. தயவுசெய்து மீண்டும் முயற்சிக்கவும்."
+    },
+    "loading": "ஏற்றுகிறது..."
+  }
+  
