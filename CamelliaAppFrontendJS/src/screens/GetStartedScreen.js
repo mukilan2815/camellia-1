@@ -1,21 +1,21 @@
 // src/screens/GetStartedScreen.js
-import React, { useEffect } from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Image, 
-  TouchableOpacity, 
-  Animated, 
+import React, { useEffect } from "react";
+import {
+  StyleSheet,
+  View,
+  Image,
+  TouchableOpacity,
+  Animated,
   Dimensions,
-  Easing
-} from 'react-native';
-import { Text } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import * as Animatable from 'react-native-animatable';
-import { useTranslation } from 'react-i18next';
+  Easing,
+} from "react-native";
+import { Text } from "react-native-paper";
+import { useNavigation } from "@react-navigation/native";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import * as Animatable from "react-native-animatable";
+import { useTranslation } from "react-i18next";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 // Define custom animation for the image
 const floatingAnimation = {
@@ -31,23 +31,20 @@ const floatingAnimation = {
 };
 
 const GetStartedScreen = () => {
-  // useEffect(()=>{
-  // navigation.reset(
-  //   {
+  // useEffect(() => {
+  //   navigation.reset({
   //     index: 0,
   //     routes: [
   //       {
-  //         name: 'Home',
-  //         },
-  //         ],
-  //         },
-  //         );
-  //         },[]);
-
+  //         name: "Home",
+  //       },
+  //     ],
+  //   });
+  // }, []);
 
   const navigation = useNavigation();
   const { t } = useTranslation();
-  
+
   // Animation values
   const arrowAnimation = new Animated.Value(0);
   const buttonScale = new Animated.Value(1);
@@ -99,37 +96,37 @@ const GetStartedScreen = () => {
   return (
     <View style={styles.container}>
       {/* Top Left Logo */}
-      <Animatable.View 
-        animation="fadeIn" 
-        duration={1000} 
+      <Animatable.View
+        animation="fadeIn"
+        duration={1000}
         delay={300}
         style={styles.topLeft}
       >
         <Image
-          source={require('../assets/images/logo2.png')}
+          source={require("../assets/images/logo2.png")}
           style={styles.roundedLogo}
           resizeMode="contain"
         />
       </Animatable.View>
 
       {/* Top Right Logo */}
-      <Animatable.View 
-        animation="fadeIn" 
-        duration={1000} 
+      <Animatable.View
+        animation="fadeIn"
+        duration={1000}
         delay={600}
         style={styles.topRight}
       >
         <Image
-          source={require('../assets/images/logo.png')}
+          source={require("../assets/images/logo.png")}
           style={styles.roundedLogo}
           resizeMode="contain"
         />
       </Animatable.View>
 
       {/* Center Content */}
-      <Animatable.View 
-        animation="fadeIn" 
-        duration={1200} 
+      <Animatable.View
+        animation="fadeIn"
+        duration={1200}
         delay={900}
         style={styles.centerContent}
       >
@@ -141,46 +138,43 @@ const GetStartedScreen = () => {
           easing="ease-in-out"
         >
           <Image
-            source={require('../assets/images/landing.png')}
+            source={require("../assets/images/landing.png")}
             style={styles.teaLeaf}
             resizeMode="contain"
           />
         </Animatable.View>
-        
-        <Animatable.Text 
-          animation="fadeInUp" 
-          duration={1000} 
+
+        <Animatable.Text
+          animation="fadeInUp"
+          duration={1000}
           delay={1200}
           style={styles.appName}
         >
-          {t('Camellia')}
+          {t("Camellia")}
         </Animatable.Text>
       </Animatable.View>
 
       {/* Animated Get Started Button */}
-      <Animatable.View 
-        animation="fadeInUp" 
-        duration={1000} 
+      <Animatable.View
+        animation="fadeInUp"
+        duration={1000}
         delay={1500}
         style={styles.buttonContainer}
       >
         <TouchableOpacity
-          onPress={() => navigation.navigate('LanguageSelection')}
+          onPress={() => navigation.navigate("LanguageSelection")}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           activeOpacity={0.9}
         >
-          <Animated.View 
-            style={[
-              styles.button,
-              { transform: [{ scale: buttonScale }] }
-            ]}
+          <Animated.View
+            style={[styles.button, { transform: [{ scale: buttonScale }] }]}
           >
-            <Text style={styles.buttonText}>{t('Get Started')}</Text>
-            <Animated.View 
+            <Text style={styles.buttonText}>{t("Get Started")}</Text>
+            <Animated.View
               style={[
                 styles.arrowContainer,
-                { transform: [{ translateX: arrowTranslateX }] }
+                { transform: [{ translateX: arrowTranslateX }] },
               ]}
             >
               <Icon name="arrow-forward" size={24} color="#FFFFFF" />
@@ -195,19 +189,19 @@ const GetStartedScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     padding: 16,
-    position: 'relative',
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
   },
   topLeft: {
-    position: 'absolute',
-    top:0,
+    position: "absolute",
+    top: 0,
     left: 10,
   },
   topRight: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     right: 10,
   },
@@ -215,11 +209,11 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     //eeeborderRadius: 50,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   centerContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 40,
   },
   teaLeaf: {
@@ -231,27 +225,27 @@ const styles = StyleSheet.create({
   appName: {
     marginTop: 20,
     fontSize: 36,
-    fontWeight: 'bold',
-    color: '#2E7D32',
-    textTransform: 'uppercase',
+    fontWeight: "bold",
+    color: "#2E7D32",
+    textTransform: "uppercase",
     letterSpacing: 1,
   },
   buttonContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 30,
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2E7D32',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2E7D32",
     borderRadius: 30,
     paddingVertical: 15,
     paddingHorizontal: 30,
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
@@ -260,9 +254,9 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
   },
   buttonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginRight: 10,
   },
   arrowContainer: {

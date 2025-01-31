@@ -1,17 +1,19 @@
 // src/navigation/AppNavigator.js
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import { Provider as PaperProvider } from 'react-native-paper';
-import customTheme from '../utils/theme';
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import { Provider as PaperProvider } from "react-native-paper";
+import customTheme from "../utils/theme";
 
 // Import Screens
-import GetStartedScreen from '../screens/GetStartedScreen';
-import LanguageSelectionScreen from '../screens/LanguageSelectionScreen';
-import UserDetailsScreen from '../screens/UserDetailsScreen';
-import OTPScreen from '../screens/OTPScreen';
-import HomeScreen from '../screens/HomeScreen';
-
+import GetStartedScreen from "../screens/GetStartedScreen";
+import LanguageSelectionScreen from "../screens/LanguageSelectionScreen";
+import UserDetailsScreen from "../screens/UserDetailsScreen";
+import OTPScreen from "../screens/OTPScreen";
+import HomeScreen from "../screens/HomeScreen";
+import Prediction from "../screens/Prediction";
+import CameraScreen from "../screens/Camera";
+import ScanCamera from "../screens/ScanCamera";
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
@@ -44,7 +46,16 @@ const AppNavigator = () => {
             component={HomeScreen}
             options={{ headerShown: false }}
           />
-         
+          <Stack.Screen
+            name="Prediction"
+            component={Prediction}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="ScanCamera"
+            component={ScanCamera}
+            options={{ headerShown: false }}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </PaperProvider>

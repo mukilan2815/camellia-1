@@ -397,6 +397,7 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 10,
     backgroundColor: customTheme.colors.surface,
+  
   },
   button: {
     marginTop: 20,
