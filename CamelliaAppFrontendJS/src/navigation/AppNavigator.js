@@ -14,6 +14,7 @@ import HomeScreen from "../screens/HomeScreen";
 import Prediction from "../screens/Prediction";
 import CameraScreen from "../screens/Camera";
 import ScanCamera from "../screens/ScanCamera";
+import WeatherForecastScreen from "../screens/WeatherForecasting";
 const Stack = createStackNavigator();
 
 const AppNavigator = () => {
@@ -54,6 +55,11 @@ const AppNavigator = () => {
           <Stack.Screen
             name="ScanCamera"
             component={ScanCamera}
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="WeatherForecast"
+            component={WeatherForecastScreen}
             options={{ headerShown: false }}
           />
         </Stack.Navigator>
