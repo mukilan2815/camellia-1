@@ -31,16 +31,16 @@ const floatingAnimation = {
 };
 
 const GetStartedScreen = () => {
-  useEffect(() => {
-    navigation.reset({
-      index: 0,
-      routes: [
-        {
-          name: "Home",
-        },
-      ],
-    });
-  }, []);
+  // useEffect(() => {
+  //   navigation.reset({
+  //     index: 0,
+  //     routes: [
+  //       {
+  //         name: "Home",
+  //       },
+  //     ],
+  //   });
+  // }, []);
 
   const navigation = useNavigation();
   const { t } = useTranslation();

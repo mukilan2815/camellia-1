@@ -351,7 +351,7 @@ const ResultScreen = ({ route, navigation }) => {
         ) : null}
 
         {/* Treatments: Chemical */}
-        {diseaseInfo.treatments.chemical &&
+        {Array.isArray(diseaseInfo.treatments?.chemical) &&
           diseaseInfo.treatments.chemical.length > 0 && (
             <>
               <Text style={styles.sectionTitle}>Chemical Control</Text>
@@ -364,7 +364,7 @@ const ResultScreen = ({ route, navigation }) => {
           )}
 
         {/* Treatments: Biological */}
-        {diseaseInfo.treatments.biological &&
+        {Array.isArray(diseaseInfo.treatments?.biological) &&
           diseaseInfo.treatments.biological.length > 0 && (
             <>
               <Text style={styles.sectionTitle}>Biological Control</Text>
@@ -377,7 +377,7 @@ const ResultScreen = ({ route, navigation }) => {
           )}
 
         {/* Treatments: Mechanical */}
-        {diseaseInfo.treatments.mechanical &&
+        {Array.isArray(diseaseInfo.treatments?.mechanical) &&
           diseaseInfo.treatments.mechanical.length > 0 && (
             <>
               <Text style={styles.sectionTitle}>Mechanical Control</Text>

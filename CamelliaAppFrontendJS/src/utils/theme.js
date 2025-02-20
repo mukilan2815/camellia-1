@@ -9,8 +9,8 @@ const customTheme = {
     accent: "#4C956C", // Green
     background: "#FFFFFF", // White
     surface: "#FFFFFF", // White
-    text: "#2C6E49", // Dark Green (Better readability)
-    onSurface: '#F3FAF6',
+    // Gray (Better readability)
+    onSurface: "#808080",
     // Button Text Contrast Fix:
     onPrimary: "#FFFFFF", // Button Text on Primary (Changed to White for better contrast)
     onAccent: "#FFFFFF", // Button Text on Accent
