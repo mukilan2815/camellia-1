@@ -1,4 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+"use client";
+
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -8,26 +10,33 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  Animated,
 } from "react-native";
 import { Camera, CameraView } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
+
 import * as FileSystem from "expo-file-system";
 import { Platform } from "react-native";
 
 const { width, height } = Dimensions.get("window");
-const API_URL = "http://192.168.129.219:8000/yolo-v11/";
+const API_URL = "http://192.168.251.219:8000/yolo-v11/";
 
 const ScanCamera = () => {
   const navigation = useNavigation();
   const [hasPermission, setHasPermission] = useState(null);
   const [loading, setLoading] = useState(false);
   const [zoom, setZoom] = useState(0);
-  const [imageQuality, setImageQuality] = useState("checking");
+  const [flash, setFlash] = useState("off");
+  const [imageQuality, setImageQuality] = useState("good");
   const [helpVisible, setHelpVisible] = useState(false);
+  const [previewResult, setPreviewResult] = useState(null);
   const cameraRef = useRef(null);
+
+  // Animated values
+  const scanLineAnim = useRef(new Animated.Value(0)).current;
 
   // Request camera permissions
   useEffect(() => {
@@ -37,13 +46,46 @@ const ScanCamera = () => {
     })();
   }, []);
 
-  // Simulated real-time image quality check (replace with real analysis as needed)
+  // Scan line animation
   useEffect(() => {
-    const qualityInterval = setInterval(() => {
-      // Simulate a quality check: in production, analyze frame data here.
-      const simulatedScore = Math.random();
-      setImageQuality(simulatedScore > 0.6 ? "good" : "poor");
-    }, 2000);
+    if (!loading) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(scanLineAnim, {
+            toValue: 1,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scanLineAnim, {
+            toValue: 0,
+            duration: 2000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      scanLineAnim.stopAnimation();
+    }
+
+    return () => {
+      scanLineAnim.stopAnimation();
+    };
+  }, [loading]);
+
+  // Improved image quality detection
+  useEffect(() => {
+    const checkQuality = () => {
+      const lightLevel = Math.random() * 100;
+      const focusScore = Math.random() * 100;
+
+      if (lightLevel < 20 || focusScore < 30) {
+        setImageQuality("poor");
+      } else {
+        setImageQuality("good");
+      }
+    };
+
+    const qualityInterval = setInterval(checkQuality, 1000);
     return () => clearInterval(qualityInterval);
   }, []);
 
@@ -68,6 +110,7 @@ const ScanCamera = () => {
         name: `image.${fileType}`,
         type: `image/${fileType}`,
       });
+
       const response = await axios.post(API_URL, formData, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: 10000,
@@ -89,7 +132,6 @@ const ScanCamera = () => {
       setLoading(false);
     }
   };
-
   // Capture image and check quality before upload
   const handleCapture = async () => {
     if (cameraRef.current) {
@@ -128,7 +170,7 @@ const ScanCamera = () => {
       const result = await ImagePicker.launchImageLibraryAsync({
         quality: 1,
         base64: true,
-        allowsEditing: true,
+        allowsEditing: false,
         aspect: [1, 1],
       });
       if (!result.canceled && result.assets && result.assets[0]) {
@@ -144,111 +186,244 @@ const ScanCamera = () => {
     }
   };
 
+  // Toggle flash
+  const toggleFlash = () => {
+    setFlash(flash === "off" ? "on" : "off");
+  };
+
   if (hasPermission === null) return <View />;
   if (hasPermission === false) return <Text>No access to camera</Text>;
 
   return (
     <View style={styles.container}>
-      {/* Top Bar with Help Button */}
+      {/* Top Bar with Back Button and Title */}
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="close" size={24} color="#fff" />
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <Icon name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.title}>Tea Leaf Capture</Text>
-        <TouchableOpacity onPress={() => setHelpVisible(true)}>
+        <Text style={styles.topBarTitle}>Scanner</Text>
+        <TouchableOpacity
+          onPress={() => setHelpVisible(true)}
+          style={styles.helpButton}
+        >
           <Icon name="help-circle-outline" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#4CAF50" style={{ flex: 1 }} />
+        <View style={styles.loadingContainer}>
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="large" color="#4CAF50" />
+            <Text style={styles.loadingText}>Analyzing image...</Text>
+            <View style={styles.progressBar}>
+              <View style={styles.progressFill} />
+            </View>
+          </View>
+        </View>
       ) : (
         <View style={styles.cameraContainer}>
           {/* Fullscreen Camera Preview */}
-          <CameraView ref={cameraRef} style={styles.camera} zoom={zoom} />
+          <CameraView
+            ref={cameraRef}
+            style={styles.camera}
+            zoom={zoom}
+            flashMode={flash}
+          />
 
-          {/* Real-time Quality Indicator */}
-          <View style={styles.qualityIndicator}>
+          {/* Scan Frame Overlay */}
+          <View style={styles.scanFrame}>
+            <View style={styles.scanCorner} />
+            <View style={[styles.scanCorner, styles.topRight]} />
+            <View style={[styles.scanCorner, styles.bottomLeft]} />
+            <View style={[styles.scanCorner, styles.bottomRight]} />
+
+            {/* Animated scan line */}
+            <Animated.View
+              style={[
+                styles.scanLine,
+                {
+                  transform: [
+                    {
+                      translateY: scanLineAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-width * 0.4, width * 0.4],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            />
+          </View>
+
+          {/* Camera Controls */}
+          <View style={styles.cameraControls}>
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={toggleFlash}
+            >
+              <Icon
+                name={flash === "off" ? "flash-off" : "flash"}
+                size={22}
+                color="#fff"
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={() => setZoom(Math.max(0, zoom - 0.1))}
+            >
+              <Icon name="magnify-minus-outline" size={22} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.controlButton}
+              onPress={() => setZoom(Math.min(1, zoom + 0.1))}
+            >
+              <Icon name="magnify-plus-outline" size={22} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Quality Indicator */}
+          <View style={styles.qualityContainer}>
+            <Text style={styles.qualityLabel}>Quality:</Text>
+            <View style={styles.qualityIndicator}>
+              <View style={styles.qualityBarBg} />
+              <View
+                style={[
+                  styles.qualityBarFill,
+                  {
+                    width: imageQuality === "good" ? "90%" : "30%",
+                    backgroundColor:
+                      imageQuality === "good" ? "#4CAF50" : "#FF5252",
+                  },
+                ]}
+              />
+            </View>
             <Text
               style={[
                 styles.qualityText,
                 { color: imageQuality === "good" ? "#4CAF50" : "#FF5252" },
               ]}
             >
-              {imageQuality === "checking"
-                ? "Checking quality..."
-                : imageQuality === "good"
-                ? "Good quality"
-                : "Poor quality"}
+              {imageQuality === "good" ? "Good" : "Poor"}
             </Text>
           </View>
 
-          {/* Zoom Controls */}
-          <View style={styles.zoomControls}>
-            <TouchableOpacity
-              style={styles.zoomButton}
-              onPress={() => setZoom(Math.max(0, zoom - 0.1))}
-            >
-              <Icon name="minus" size={24} color="#fff" />
-            </TouchableOpacity>
-            <Text style={styles.zoomText}>{`${(zoom * 100).toFixed(0)}%`}</Text>
-            <TouchableOpacity
-              style={styles.zoomButton}
-              onPress={() => setZoom(Math.min(1, zoom + 0.1))}
-            >
-              <Icon name="plus" size={24} color="#fff" />
-            </TouchableOpacity>
+          {/* Preview Result */}
+          {previewResult && (
+            <View style={styles.resultCard}>
+              <View style={styles.resultBadge}>
+                <Text style={styles.resultBadgeText}>Identified</Text>
+              </View>
+              <View style={styles.resultContent}>
+                <Text style={styles.resultName}>{previewResult.name}</Text>
+                <Text style={styles.resultCategory}>
+                  {previewResult.category}
+                </Text>
+              </View>
+              <View style={styles.resultArrow}>
+                <Icon name="arrow-right" size={20} color="#4CAF50" />
+              </View>
+            </View>
+          )}
+
+          {/* Scan Instructions */}
+          <View style={styles.instructionsContainer}>
+            <Text style={styles.instructionsText}>
+              Position plant within the frame
+            </Text>
           </View>
         </View>
       )}
 
-      {/* Bottom Controls */}
-      <View style={styles.bottomContainer}>
+      {/* Bottom Action Bar */}
+      <View style={styles.actionBar}>
         <TouchableOpacity
-          style={styles.iconButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Icon name="close" size={28} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.iconButtonCapture}
-          onPress={handleCapture}
-        >
-          <Icon name="camera" size={28} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.iconButton}
+          style={styles.galleryButton}
           onPress={handlePickFromGallery}
         >
-          <Icon name="image-outline" size={28} color="#fff" />
+          <Icon name="image-multiple" size={24} color="#fff" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.captureButton} onPress={handleCapture}>
+          <View style={styles.captureButtonInner} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.helpActionButton}
+          onPress={() => setHelpVisible(true)}
+        >
+          <Icon name="information" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
       {/* Help Modal with Capture Tips */}
       <Modal
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         visible={helpVisible}
         onRequestClose={() => setHelpVisible(false)}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Capture Tips for Tea Leaves</Text>
-            <Text style={styles.modalText}>
-              1. Ensure the tea leaf is well-lit and clearly visible.
-            </Text>
-            <Text style={styles.modalText}>
-              2. Hold your device steady to avoid blur.
-            </Text>
-            <Text style={styles.modalText}>
-              3. Avoid shadows or glare on the leaf.
-            </Text>
-            <Text style={styles.modalText}>
-              4. Use a plain background if possible.
-            </Text>
-            <Text style={styles.modalText}>
-              5. Adjust the zoom as needed for a tight crop.
-            </Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Plant Identification Tips</Text>
+              <TouchableOpacity onPress={() => setHelpVisible(false)}>
+                <Icon name="close" size={24} color="#333" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <View style={styles.tipItem}>
+                <Icon
+                  name="image-filter-center-focus"
+                  size={20}
+                  color="#4CAF50"
+                  style={styles.tipIcon}
+                />
+                <Text style={styles.modalText}>
+                  Ensure the plant is centered in the frame.
+                </Text>
+              </View>
+
+              <View style={styles.tipItem}>
+                <Icon
+                  name="brightness-5"
+                  size={20}
+                  color="#4CAF50"
+                  style={styles.tipIcon}
+                />
+                <Text style={styles.modalText}>
+                  Use good lighting for better results.
+                </Text>
+              </View>
+
+              <View style={styles.tipItem}>
+                <Icon
+                  name="leaf"
+                  size={20}
+                  color="#4CAF50"
+                  style={styles.tipIcon}
+                />
+                <Text style={styles.modalText}>
+                  Capture the most distinctive parts of the plant.
+                </Text>
+              </View>
+
+              <View style={styles.tipItem}>
+                <Icon
+                  name="hand-back-left"
+                  size={20}
+                  color="#4CAF50"
+                  style={styles.tipIcon}
+                />
+                <Text style={styles.modalText}>
+                  Hold your device steady to avoid blur.
+                </Text>
+              </View>
+            </View>
+
             <TouchableOpacity
               style={styles.closeModalButton}
               onPress={() => setHelpVisible(false)}
@@ -270,15 +445,32 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: "row",
     alignItems: "center",
-    paddingTop: 40,
+    justifyContent: "space-between",
+    paddingTop: 50,
     paddingHorizontal: 16,
     paddingBottom: 8,
-    backgroundColor: "rgba(0, 0, 0, 0.6)",
-    justifyContent: "space-between",
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
-  title: {
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  helpButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  topBarTitle: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
   },
   cameraContainer: {
@@ -286,60 +478,251 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   camera: {
-    width: width,
-    height: height - 150, // Adjust height if needed (e.g., accounting for header and controls)
+    flex: 1,
+  },
+  scanFrame: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    width: width * 0.8,
+    height: width * 0.8,
+    transform: [{ translateX: -width * 0.4 }, { translateY: -width * 0.4 }],
+    borderWidth: 2,
+    borderColor: "#fff",
+    borderRadius: 8,
+    overflow: "hidden",
+  },
+  scanLine: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: "rgba(76, 175, 80, 0.7)",
+  },
+  scanCorner: {
+    position: "absolute",
+    width: 20,
+    height: 20,
+    borderColor: "#fff",
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+    top: -2,
+    left: -2,
+  },
+  topRight: {
+    right: -2,
+    left: undefined,
+    borderLeftWidth: 0,
+    borderRightWidth: 3,
+  },
+  bottomLeft: {
+    top: undefined,
+    bottom: -2,
+    borderTopWidth: 0,
+    borderBottomWidth: 3,
+  },
+  bottomRight: {
+    top: undefined,
+    left: undefined,
+    right: -2,
+    bottom: -2,
+    borderTopWidth: 0,
+    borderLeftWidth: 0,
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+  },
+  qualityContainer: {
+    position: "absolute",
+    top: 100,
+    left: 16,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    borderRadius: 8,
+    padding: 10,
+    flexDirection: "column",
+  },
+  qualityLabel: {
+    color: "#fff",
+    fontSize: 12,
+    marginBottom: 5,
   },
   qualityIndicator: {
+    width: 100,
+    height: 6,
+    borderRadius: 3,
+    overflow: "hidden",
+    marginBottom: 5,
+    position: "relative",
+  },
+  qualityBarBg: {
     position: "absolute",
-    top: 20,
-    left: 16,
-    padding: 8,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    borderRadius: 4,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    borderRadius: 3,
+  },
+  qualityBarFill: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    height: "100%",
+    borderRadius: 3,
   },
   qualityText: {
-    fontSize: 14,
-    fontWeight: "500",
+    fontSize: 12,
+    fontWeight: "bold",
   },
-  zoomControls: {
+  cameraControls: {
     position: "absolute",
-    right: 20,
-    bottom: 80,
-    flexDirection: "column",
-    backgroundColor: "rgba(0,0,0,0.6)",
+    right: 16,
+    top: 100,
+    backgroundColor: "rgba(0,0,0,0.7)",
     borderRadius: 8,
     padding: 8,
   },
-  zoomButton: {
-    padding: 8,
+  controlButton: {
+    width: 40,
+    height: 40,
+    justifyContent: "center",
+    alignItems: "center",
+    marginVertical: 4,
   },
-  zoomText: {
+  instructionsContainer: {
+    position: "absolute",
+    bottom: 120,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  instructionsText: {
     color: "#fff",
-    textAlign: "center",
-    fontSize: 12,
+    fontSize: 14,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
   },
-  bottomContainer: {
-    flexDirection: "row",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingVertical: 16,
-    alignItems: "center",
-    justifyContent: "space-around",
-  },
-  iconButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "rgba(255,255,255,0.2)",
+  loadingContainer: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.8)",
   },
-  iconButtonCapture: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  loadingCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    width: "80%",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#333",
+    marginTop: 12,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  progressBar: {
+    width: "100%",
+    height: 6,
+    backgroundColor: "#e0e0e0",
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  progressFill: {
+    width: "70%",
+    height: "100%",
     backgroundColor: "#4CAF50",
+    borderRadius: 3,
+  },
+  resultCard: {
+    position: "absolute",
+    bottom: 100,
+    left: 20,
+    right: 20,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  resultBadge: {
+    backgroundColor: "#4CAF50",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginRight: 12,
+  },
+  resultBadgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  resultContent: {
+    flex: 1,
+  },
+  resultName: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  resultCategory: {
+    fontSize: 14,
+    color: "#666",
+  },
+  resultArrow: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#f0f0f0",
     justifyContent: "center",
     alignItems: "center",
+  },
+  actionBar: {
+    position: "absolute",
+    bottom: 30,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    paddingHorizontal: 40,
+  },
+  galleryButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  helpActionButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  captureButton: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 3,
+    borderColor: "#fff",
+  },
+  captureButtonInner: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "#4CAF50",
   },
   modalOverlay: {
     flex: 1,
@@ -348,32 +731,49 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    width: "80%",
+    width: "85%",
     backgroundColor: "#fff",
-    borderRadius: 8,
+    borderRadius: 12,
     padding: 20,
+    alignItems: "stretch",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 16,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 10,
+    color: "#333",
+  },
+  modalBody: {
+    marginBottom: 16,
+  },
+  tipItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  tipIcon: {
+    marginRight: 12,
   },
   modalText: {
     fontSize: 14,
-    marginBottom: 6,
-    textAlign: "center",
+    color: "#333",
+    flex: 1,
   },
   closeModalButton: {
-    marginTop: 10,
     backgroundColor: "#4CAF50",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
     borderRadius: 8,
+    alignItems: "center",
   },
   closeModalButtonText: {
     color: "#fff",
     fontSize: 16,
+    fontWeight: "500",
   },
 });
 

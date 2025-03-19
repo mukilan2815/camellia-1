@@ -295,7 +295,7 @@ const FormScreen = () => {
         },
       };
       console.log("[handleSubmit] Submitting User Data:", userData);
-      const API_ENDPOINT = "http://192.168.129.219:5000/api/auth/register";
+      const API_ENDPOINT = "http://192.168.251.219:5000/api/auth/register";
       const response = await fetch(API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
