@@ -18,7 +18,7 @@ import * as FileSystem from "expo-file-system";
 import { Platform } from "react-native";
 
 const { width, height } = Dimensions.get("window");
-const API_URL = "http://192.168.55.219:8000/yolo-v11/";
+const API_URL = "http://192.168.129.219:8000/yolo-v11/";
 
 const ScanCamera = () => {
   const navigation = useNavigation();

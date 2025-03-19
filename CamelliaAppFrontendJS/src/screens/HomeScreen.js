@@ -225,7 +225,7 @@ const HomeScreen = () => {
       </View>
 
       {/* Bottom Navigation */}
-      <Surface style={styles.bottomNav}>
+      {/* <Surface style={styles.bottomNav}>
         {[
           { icon: "home", label: "Home", active: true },
           { icon: "newspaper", label: "Tea Hub", active: false },
@@ -247,7 +247,7 @@ const HomeScreen = () => {
             </Text>
           </TouchableOpacity>
         ))}
-      </Surface>
+      </Surface> */}
     </SafeAreaView>
   );
 };
@@ -459,31 +459,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600",
   },
-  bottomNav: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    backgroundColor: "#FFFFFF",
-    elevation: 8,
-  },
-  navItem: {
-    alignItems: "center",
-    paddingHorizontal: 16,
-  },
-  navItemActive: {
-    backgroundColor: "#E8F5E9",
-    paddingVertical: 8,
-    borderRadius: 24,
-  },
-  navLabel: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-  navLabelActive: {
-    color: "#4CAF50",
-  },
+
 });

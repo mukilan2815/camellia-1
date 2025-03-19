@@ -1,81 +1,60 @@
-// src/screens/GetStartedScreen.js
-import React, { useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   StyleSheet,
   View,
-  Image,
+  Text,
   TouchableOpacity,
-  Animated,
   Dimensions,
-  Easing,
+  Animated,
+  Image,
 } from "react-native";
-import { Text } from "react-native-paper";
-import { useNavigation } from "@react-navigation/native";
-import Icon from "react-native-vector-icons/MaterialIcons";
-import * as Animatable from "react-native-animatable";
-import { useTranslation } from "react-i18next";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
-// Define custom animation for the image
-const floatingAnimation = {
-  0: {
-    transform: [{ translateY: 0 }, { scale: 1 }],
-  },
-  0.5: {
-    transform: [{ translateY: -15 }, { scale: 1.02 }],
-  },
-  1: {
-    transform: [{ translateY: 0 }, { scale: 1 }],
-  },
-};
+const WelcomeScreen = ({ navigation }) => {
+  const [currentImage, setCurrentImage] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
-const GetStartedScreen = () => {
-  // useEffect(() => {
-  //   navigation.reset({
-  //     index: 0,
-  //     routes: [
-  //       {
-  //         name: "Home",
-  //       },
-  //     ],
-  //   });
-  // }, []);
+  const backgroundImages = [
+    require("../assets/images/tea.png"),
+    require("../assets/images/tea5.jpg"),
+    require("../assets/images/tea11.jpg"),
+  ];
+  useEffect(() => {
+    // Check AsyncStorage for user data
+    const checkUserData = async () => {
+      const userData = await AsyncStorage.getItem("user");
+      if (userData) {
+        navigation.navigate("Home");
+        return;
+      }
+    };
+    checkUserData();
 
-  const navigation = useNavigation();
-  const { t } = useTranslation();
+    const interval = setInterval(() => {
+      setCurrentImage((prev) => (prev + 1) % backgroundImages.length);
+    }, 3000);
 
-  // Animation values
-  const arrowAnimation = new Animated.Value(0);
-  const buttonScale = new Animated.Value(1);
-  const imageAnimation = new Animated.Value(0);
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
 
-  // Start arrow animation
-  const startArrowAnimation = () => {
-    Animated.sequence([
-      Animated.timing(arrowAnimation, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.timing(arrowAnimation, {
-        toValue: 0,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-    ]).start(() => startArrowAnimation());
-  };
+    return () => clearInterval(interval);
+  }, [navigation]);
 
-  // Button press animations
   const handlePressIn = () => {
-    Animated.spring(buttonScale, {
+    Animated.spring(scaleAnim, {
       toValue: 0.95,
       useNativeDriver: true,
     }).start();
   };
 
   const handlePressOut = () => {
-    Animated.spring(buttonScale, {
+    Animated.spring(scaleAnim, {
       toValue: 1,
       friction: 3,
       tension: 40,
@@ -83,105 +62,66 @@ const GetStartedScreen = () => {
     }).start();
   };
 
-  useEffect(() => {
-    startArrowAnimation();
-  }, []);
-
-  // Interpolate arrow movement
-  const arrowTranslateX = arrowAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 10],
-  });
-
   return (
     <View style={styles.container}>
-      {/* Top Left Logo */}
-      <Animatable.View
-        animation="fadeIn"
-        duration={1000}
-        delay={300}
-        style={styles.topLeft}
-      >
+      {/* Background Image */}
+      <Animated.Image
+        source={backgroundImages[currentImage]}
+        style={[
+          styles.backgroundImage,
+          {
+            opacity: fadeAnim,
+            transform: [
+              {
+                scale: fadeAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1.1, 1],
+                }),
+              },
+            ],
+          },
+        ]}
+        blurRadius={0.7}
+      />
+
+      {/* Top Section - Logos & Version */}
+      <View style={styles.topContainer}>
+        <Image
+          source={require("../assets/images/kahe.png")}
+          style={styles.kahe}
+        />
         <Image
           source={require("../assets/images/logo2.png")}
-          style={styles.roundedLogo}
-          resizeMode="contain"
+          style={styles.logo}
         />
-      </Animatable.View>
+      </View>
 
-      {/* Top Right Logo */}
-      <Animatable.View
-        animation="fadeIn"
-        duration={1000}
-        delay={600}
-        style={styles.topRight}
-      >
+      <Text style={styles.versionText}>v1</Text>
+
+      {/* Logo Circles
+      <View style={styles.logoContainer}>
         <Image
-          source={require("../assets/images/logo.png")}
-          style={styles.roundedLogo}
-          resizeMode="contain"
+          source={require("../assets/images/logomain1.png")}
+          style={styles.logo1}
         />
-      </Animatable.View>
+        <Text style={styles.logoText}>Camellia</Text>
+      </View> */}
 
-      {/* Center Content */}
-      <Animatable.View
-        animation="fadeIn"
-        duration={1200}
-        delay={900}
-        style={styles.centerContent}
-      >
-        {/* Animated center image */}
-        <Animatable.View
-          animation={floatingAnimation}
-          duration={3000}
-          iterationCount="infinite"
-          easing="ease-in-out"
-        >
-          <Image
-            source={require("../assets/images/landing.png")}
-            style={styles.teaLeaf}
-            resizeMode="contain"
-          />
-        </Animatable.View>
-
-        <Animatable.Text
-          animation="fadeInUp"
-          duration={1000}
-          delay={1200}
-          style={styles.appName}
-        >
-          {t("Camellia")}
-        </Animatable.Text>
-      </Animatable.View>
-
-      {/* Animated Get Started Button */}
-      <Animatable.View
-        animation="fadeInUp"
-        duration={1000}
-        delay={1500}
-        style={styles.buttonContainer}
-      >
+      {/* Bottom Content */}
+      <View style={styles.bottomContainer}>
         <TouchableOpacity
-          onPress={() => navigation.navigate("LanguageSelection")}
+          activeOpacity={0.9}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
-          activeOpacity={0.9}
+          onPress={() => navigation.navigate("LanguageSelection")}
         >
           <Animated.View
-            style={[styles.button, { transform: [{ scale: buttonScale }] }]}
+            style={[styles.button, { transform: [{ scale: scaleAnim }] }]}
           >
-            <Text style={styles.buttonText}>{t("Get Started")}</Text>
-            <Animated.View
-              style={[
-                styles.arrowContainer,
-                { transform: [{ translateX: arrowTranslateX }] },
-              ]}
-            >
-              <Icon name="arrow-forward" size={24} color="#FFFFFF" />
-            </Animated.View>
+            <Text style={styles.buttonText}>Start Now</Text>
           </Animated.View>
         </TouchableOpacity>
-      </Animatable.View>
+      </View>
     </View>
   );
 };
@@ -189,80 +129,120 @@ const GetStartedScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    padding: 16,
-    position: "relative",
-    justifyContent: "center",
+    backgroundColor: "#000",
+  },
+  backgroundImage: {
+    position: "absolute",
+    width: width,
+    height: height,
+    opacity: 0.6,
+  },
+  topContainer: {
+    // position: "absolute",
+    // top: 20,
+    left: 20,
+    width: width - 40,
+    display: "flex",
+    justifyContent: "space-between",
+    flexDirection: "row",
     alignItems: "center",
+    gap: 10,
   },
-  topLeft: {
-    position: "absolute",
-    top: 0,
-    left: 10,
-  },
-  topRight: {
-    position: "absolute",
-    top: 0,
-    right: 10,
-  },
-  roundedLogo: {
+  logo: {
     width: 100,
     height: 100,
-    //eeeborderRadius: 50,
-    overflow: "hidden",
+    resizeMode: "contain",
   },
-  centerContent: {
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 40,
+  kahe: {
+    width: 140,
+    height: 140,
+    resizeMode: "contain",
   },
-  teaLeaf: {
-    width: width * 0.8,
-    height: width * 0.8,
-    maxWidth: 350,
-    maxHeight: 350,
+  logo1: {
+    width: 100,
+    height: 100,
+    resizeMode: "contain",
   },
-  appName: {
-    marginTop: 20,
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#2E7D32",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  buttonContainer: {
+  versionText: {
     position: "absolute",
-    bottom: 30,
-    width: "100%",
+    bottom: 10,
+    right: 10,
+    fontSize: 10,
+    color: "#FFFFFF",
+    opacity: 0.5,
+  },
+  logoContainer: {
+    position: "absolute",
+    top: "30%",
+    alignSelf: "center",
+    alignItems: "center",
+  },
+  circleContainer: {
+    position: "relative",
+    width: 64,
+    height: 64,
+  },
+  circle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.2)",
+  },
+  circleBack: {
+    position: "absolute",
+    top: -16,
+    left: -16,
+  },
+  logoText: {
+    marginTop: 24,
+    color: "#FFFFFF",
+    fontSize: 30,
+    fontFamily: "sans-serif",
+    // fontWeight: "bold",
+    letterSpacing: 3,
+  },
+  bottomContainer: {
+    position: "absolute",
+    bottom: 32,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 32,
     alignItems: "center",
   },
   button: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#2E7D32",
+    width: width - 64,
+    backgroundColor: "#9FE870",
     borderRadius: 30,
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    elevation: 5,
+    paddingVertical: 16,
+    alignItems: "center",
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+    elevation: 5,
+    bottom: 30,
   },
   buttonText: {
-    color: "#FFFFFF",
+    color: "#000000",
     fontSize: 18,
+
     fontWeight: "bold",
-    marginRight: 10,
   },
-  arrowContainer: {
-    width: 24,
-    height: 24,
+  loginContainer: {
+    marginTop: 24,
+    alignItems: "center",
+  },
+  loginText: {
+    color: "#9BA3AF",
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  loginLink: {
+    color: "#9FE870",
+    fontSize: 14,
+    fontWeight: "500",
   },
 });
 
-export default GetStartedScreen;
+export default WelcomeScreen;

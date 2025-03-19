@@ -1,60 +1,104 @@
-// src/screens/LanguageSelectionScreen.js
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, ScrollView, Alert } from 'react-native';
-import { Button, Text, RadioButton } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
-import { useTranslation } from 'react-i18next';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import customTheme from '../utils/theme';
-import * as Location from 'expo-location';
-import { Camera } from 'expo-camera';
+import React, { useState, useEffect } from "react";
+import { StyleSheet, ScrollView, Alert } from "react-native";
+import { Button, Text, RadioButton } from "react-native-paper";
+import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import customTheme from "../utils/theme";
+import * as Location from "expo-location";
+import { Camera } from "expo-camera";
 
-const LANGUAGE_PREFERENCE_KEY = 'user-language';
+const LANGUAGE_PREFERENCE_KEY = "user-language";
 
 const languages = [
-  { code: 'en', label: 'English' },
-  { code: 'hi', label: 'हिन्दी' },
-  { code: 'ta', label: 'தமிழ்' },
-  { code: 'ml', label: 'മലയാളം' },
-  { code: 'kn', label: 'ಕನ್ನಡ' },
-  { code: 'te', label: 'తెలుగు' },
-  { code: 'as', label: 'অসমীয়া' },
-  // Add other South Indian languages as needed
+  { code: "en", label: "English" },
+  { code: "hi", label: "हिन्दी" },
+  { code: "ta", label: "தமிழ்" },
+  { code: "ml", label: "മലയാളം" },
+  { code: "kn", label: "ಕನ್ನಡ" },
+  { code: "te", label: "తెలుగు" },
+  { code: "as", label: "অসমীয়া" },
 ];
 
+// Helper function to call an open translation API (MyMemory)
+const translateText = async (text, targetLang) => {
+  try {
+    // If target language is English, return original text
+    if (targetLang === "en") return text;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
+      text
+    )}&langpair=en|${targetLang}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    // MyMemory returns the translated text in data.responseData.translatedText
+    return data.responseData.translatedText || text;
+  } catch (error) {
+    console.error("Translation error:", error);
+    return text; // Fallback to original text on error
+  }
+};
+
 const LanguageSelectionScreen = () => {
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [translatedStrings, setTranslatedStrings] = useState({
+    selectLanguage: "Select Language",
+    next: "Next",
+  });
   const navigation = useNavigation();
-  const { t, i18n } = useTranslation();
   const [location, setLocation] = useState(null);
   const [hasCameraPermission, setHasCameraPermission] = useState(null);
   const [hasLocationPermission, setHasLocationPermission] = useState(null);
 
+  // Function to fetch translations for page texts using MyMemory API
+  const fetchTranslations = async (targetLang) => {
+    if (targetLang === "en") {
+      setTranslatedStrings({
+        selectLanguage: "Select Language",
+        next: "Next",
+      });
+    } else {
+      const [selectLanguageText, nextText] = await Promise.all([
+        translateText("Select Language", targetLang),
+        translateText("Next", targetLang),
+      ]);
+      setTranslatedStrings({
+        selectLanguage: selectLanguageText,
+        next: nextText,
+      });
+    }
+  };
+
   useEffect(() => {
-    // Function to request permissions
+    // Fetch translations when the selected language changes
+    fetchTranslations(selectedLanguage);
+  }, [selectedLanguage]);
+
+  useEffect(() => {
+    // Request permissions for camera and location
     const requestPermissions = async () => {
       try {
         // Request Camera Permission
-        const { status: cameraStatus } = await Camera.requestCameraPermissionsAsync();
-        setHasCameraPermission(cameraStatus === 'granted');
+        const { status: cameraStatus } =
+          await Camera.requestCameraPermissionsAsync();
+        setHasCameraPermission(cameraStatus === "granted");
 
-        if (cameraStatus !== 'granted') {
+        if (cameraStatus !== "granted") {
           Alert.alert(
-            'Permission Denied',
-            'Camera permission is required to use certain features of the app.',
-            [{ text: 'OK' }]
+            "Permission Denied",
+            "Camera permission is required to use certain features of the app.",
+            [{ text: "OK" }]
           );
         }
 
         // Request Location Permission
-        const { status: locationStatus } = await Location.requestForegroundPermissionsAsync();
-        setHasLocationPermission(locationStatus === 'granted');
+        const { status: locationStatus } =
+          await Location.requestForegroundPermissionsAsync();
+        setHasLocationPermission(locationStatus === "granted");
 
-        if (locationStatus !== 'granted') {
+        if (locationStatus !== "granted") {
           Alert.alert(
-            'Permission Denied',
-            'Location permission is required to access your location.',
-            [{ text: 'OK' }]
+            "Permission Denied",
+            "Location permission is required to access your location.",
+            [{ text: "OK" }]
           );
           return; // Exit if location permission is not granted
         }
@@ -63,8 +107,8 @@ const LanguageSelectionScreen = () => {
         const userLocation = await Location.getCurrentPositionAsync({});
         setLocation(userLocation.coords);
       } catch (error) {
-        console.error('Error requesting permissions:', error);
-        Alert.alert('Error', 'An error occurred while requesting permissions.');
+        console.error("Error requesting permissions:", error);
+        Alert.alert("Error", "An error occurred while requesting permissions.");
       }
     };
 
@@ -73,7 +117,10 @@ const LanguageSelectionScreen = () => {
 
   const handleNext = async () => {
     if (!location) {
-      Alert.alert('Location Required', 'Unable to fetch your location. Please try again.');
+      Alert.alert(
+        "Location Required",
+        "Unable to fetch your location. Please try again."
+      );
       return;
     }
 
@@ -82,25 +129,26 @@ const LanguageSelectionScreen = () => {
       await AsyncStorage.setItem(LANGUAGE_PREFERENCE_KEY, selectedLanguage);
 
       // Save location data in AsyncStorage (optional)
-      await AsyncStorage.setItem('user-location', JSON.stringify(location));
+      await AsyncStorage.setItem("user-location", JSON.stringify(location));
 
-      // Change the language in i18next
-      await i18n.changeLanguage(selectedLanguage);
+      console.log("Navigating to UserDetailsScreen with language and location");
 
-      // Log before navigation
-      console.log('Navigating to UserDetailsScreen with language and location');
-
-      // Navigate to UserDetailsScreen with the selected language and location
-      navigation.navigate('UserDetails', { language: selectedLanguage, location });
+      navigation.navigate("UserDetails", {
+        language: selectedLanguage,
+        location,
+      });
     } catch (error) {
-      console.error('Error setting language or location:', error);
-      Alert.alert('Error', 'Failed to set language or fetch location. Please try again.');
+      console.error("Error setting language or location:", error);
+      Alert.alert(
+        "Error",
+        "Failed to set language or fetch location. Please try again."
+      );
     }
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.heading}>{t('selectLanguage')}</Text>
+      <Text style={styles.heading}>{translatedStrings.selectLanguage}</Text>
       <RadioButton.Group
         onValueChange={(newValue) => setSelectedLanguage(newValue)}
         value={selectedLanguage}
@@ -112,7 +160,7 @@ const LanguageSelectionScreen = () => {
             key={lang.code}
             labelStyle={styles.radioLabel}
             color={customTheme.colors.primary} // Uses theme primary color
-            uncheckedColor={customTheme.colors.text} // Dark Green
+            uncheckedColor={customTheme.colors.text} // Text color from theme
           />
         ))}
       </RadioButton.Group>
@@ -124,7 +172,7 @@ const LanguageSelectionScreen = () => {
         labelStyle={styles.buttonLabel}
         disabled={!location} // Disable button if location is not fetched
       >
-        {t('next')}
+        {translatedStrings.next}
       </Button>
     </ScrollView>
   );
@@ -133,28 +181,27 @@ const LanguageSelectionScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: customTheme.colors.background, // Uses theme background color
+    backgroundColor: customTheme.colors.background,
     padding: 16,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   heading: {
-    fontSize: 26, // Slightly larger font
-    fontWeight: 'bold',
-    color: customTheme.colors.text, // Dark Green
+    fontSize: 26,
+    fontWeight: "bold",
+    color: customTheme.colors.text,
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
     letterSpacing: 1,
   },
   radioLabel: {
     fontSize: 18,
-    color: customTheme.colors.text, // Uses theme text color
+    color: customTheme.colors.text,
   },
   button: {
     marginTop: 10,
-    alignSelf: 'center',
-    backgroundColor: customTheme.colors.primary, // Uses theme primary color
+    alignSelf: "center",
+    backgroundColor: customTheme.colors.primary,
     borderRadius: 25,
- 
   },
   buttonContent: {
     paddingVertical: 5,
@@ -162,8 +209,7 @@ const styles = StyleSheet.create({
   },
   buttonLabel: {
     fontSize: 18,
-    color: customTheme.colors.surface, // Ensures contrast with the button
-    //fontWeight: 'bold',
+    color: customTheme.colors.surface,
   },
 });
 
