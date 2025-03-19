@@ -13,7 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import * as Location from "expo-location";
 
-const API_KEY = "9dac1789f6909ca2205c94277b32f8bd";
+const API_KEY = "8cf62faa46f163cabb513fb54b5bcc50";
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -38,6 +38,7 @@ const HomeScreen = () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
         console.error("Location permission denied");
+        setLoading(false);
         return;
       }
 
@@ -57,31 +58,17 @@ const HomeScreen = () => {
 
   const fetchWeather = async (latitude, longitude) => {
     try {
+      // Basic weather endpoint to get city name, temperature, etc.
       const url = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}&units=metric`;
       const response = await fetch(url);
       const data = await response.json();
-      if (data?.weather) setWeather(data);
+      if (data?.weather) {
+        setWeather(data);
+      }
     } catch (error) {
       console.error("Error fetching weather:", error);
     }
   };
-
-  const WeatherCard = () =>
-    weather && (
-      <Surface style={styles.weatherCard}>
-        <View style={styles.weatherContent}>
-          <Icon
-            name={getWeatherIcon(weather.weather[0].main)}
-            size={24}
-            color="#4CAF50"
-          />
-          <Text style={styles.temperature}>
-            {Math.round(weather.main.temp)}°C
-          </Text>
-          <Text style={styles.weatherDesc}>{weather.weather[0].main}</Text>
-        </View>
-      </Surface>
-    );
 
   const getWeatherIcon = (condition) => {
     const icons = {
@@ -90,112 +77,152 @@ const HomeScreen = () => {
       Rain: "weather-rainy",
       Snow: "weather-snowy",
       Thunderstorm: "weather-lightning",
+      Drizzle: "weather-pouring",
       default: "weather-partly-cloudy",
     };
     return icons[condition] || icons.default;
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        style={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
+  const WeatherCard = () =>
+    weather && (
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() =>
+          navigation.navigate("WeatherForecast", {
+            lat: location?.coords.latitude,
+            lon: location?.coords.longitude,
+          })
+        }
       >
-        {/* Header with Weather */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.userInfo}>
-              <Image
-                source={{ uri: "https://i.pravatar.cc/150" }}
-                style={styles.avatar}
-              />
-              <View style={styles.welcomeText}>
-                <Text style={styles.userName}>
-                  {user?.name || "Alex William"}
-                </Text>
-                <Text style={styles.greeting}>Welcome Back! 👋</Text>
-              </View>
+        <Surface style={styles.weatherCard}>
+          <View style={styles.weatherContent}>
+            {/* Location, Temperature & Description on the left */}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.locationText}>{weather.name}</Text>
+              <Text style={styles.temperature}>
+                {Math.round(weather.main.temp)}°C
+              </Text>
+              <Text style={styles.weatherDesc}>{weather.weather[0].main}</Text>
             </View>
-            <TouchableOpacity
-              onPress={() => navigation.navigate("Notifications")}
-            >
-              <Icon name="bell-outline" size={24} color="#1A1A1A" />
-            </TouchableOpacity>
-          </View>
-          <WeatherCard />
-        </View>
-
-        {/* Main Banner */}
-        <Surface style={styles.banner}>
-          <Image
-            source={{
-              uri: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854",
-            }}
-            style={styles.bannerImage}
-          />
-          <View style={styles.bannerOverlay}>
-            <Text style={styles.bannerTitle}>
-              Learn how plantia helps 10,000+ farmers
-            </Text>
-            <Text style={styles.bannerSubtitle}>
-              Lorem ipsum dolor sit amet consectetur
-            </Text>
+            {/* Icon on the right (larger size) */}
+            <Icon
+              name={getWeatherIcon(weather.weather[0].main)}
+              size={48}
+              color="#4CAF50"
+            />
           </View>
         </Surface>
+      </TouchableOpacity>
+    );
 
-        {/* Scan Section */}
-        <View style={styles.scanSection}>
-          <View style={styles.scanHeader}>
-            <Icon name="leaf" size={20} color="#4CAF50" />
-            <Text style={styles.scanTitle}>
-              Know plant disease with plantia AI
-            </Text>
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Make the container position 'relative' so our floating button can be absolutely positioned */}
+      <View style={{ flex: 1, position: "relative" }}>
+        <ScrollView
+          style={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          // ↑ Padding at bottom so content isn't hidden behind floating button/nav
+        >
+          {/* Header with Weather */}
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <View style={styles.userInfo}>
+                <Image
+                  source={{ uri: "https://i.pravatar.cc/150" }}
+                  style={styles.avatar}
+                />
+                <View style={styles.welcomeText}>
+                  <Text style={styles.userName}>
+                    {user?.name || "Alex William"}
+                  </Text>
+                  <Text style={styles.greeting}>Welcome Back! 👋</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("Notifications")}
+              >
+                <Icon name="bell-outline" size={24} color="#1A1A1A" />
+              </TouchableOpacity>
+            </View>
+            <WeatherCard />
           </View>
-          <Text style={styles.scanSubtitle}>
-            Lorem ipsum dolor sit amet consectetur
-          </Text>
-          <TouchableOpacity
-            style={styles.scanButton}
-            onPress={() => navigation.navigate("ScanCamera")}
-          >
-            <Text
-              onPress={() => {
-                navigation.navigate("ScanCamera");
-              }}
-              style={styles.scanButtonText}
-            >
-              Scan Now
-            </Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Recent Diagnoses */}
-        <View style={styles.diagnosesSection}>
-          <View style={styles.diagnosesHeader}>
-            <Text style={styles.diagnosesTitle}>Recent Diagnose</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAll}>See all</Text>
+          {/* Main Banner */}
+          <Surface style={styles.banner}>
+            <Image
+              source={{
+                uri: "https://images.unsplash.com/photo-1500937386664-56d1dfef3854",
+              }}
+              style={styles.bannerImage}
+            />
+            <View style={styles.bannerOverlay}>
+              <Text style={styles.bannerTitle}>
+                Learn how plantia helps 10,000+ farmers
+              </Text>
+              <Text style={styles.bannerSubtitle}>
+                Lorem ipsum dolor sit amet consectetur
+              </Text>
+            </View>
+          </Surface>
+
+          {/* Scan Section */}
+          <View style={styles.scanSection}>
+            <View style={styles.scanHeader}>
+              <Icon name="leaf" size={20} color="#4CAF50" />
+              <Text style={styles.scanTitle}>
+                Know plant disease with plantia AI
+              </Text>
+            </View>
+            <Text style={styles.scanSubtitle}>
+              Lorem ipsum dolor sit amet consectetur
+            </Text>
+            <TouchableOpacity
+              style={styles.scanButton}
+              onPress={() => navigation.navigate("ScanCamera")}
+            >
+              <Text style={styles.scanButtonText}>Scan Now</Text>
             </TouchableOpacity>
           </View>
 
-          {[
-            { name: "Powder Mildew", plant: "Spinach", time: "2h ago" },
-            { name: "Bacterial Spot", plant: "Carrot", time: "Jul 3, 2024" },
-            { name: "Blight", plant: "Apple", time: "Jun 24, 2024" },
-          ].map((item, index) => (
-            <View key={index} style={styles.diagnoseItem}>
-              <View style={styles.diagnoseIcon}>
-                <Icon name="leaf" size={20} color="#4CAF50" />
-              </View>
-              <View style={styles.diagnoseInfo}>
-                <Text style={styles.diagnoseName}>{item.name}</Text>
-                <Text style={styles.diagnosePlant}>{item.plant}</Text>
-              </View>
-              <Text style={styles.diagnoseTime}>{item.time}</Text>
+          {/* Recent Diagnoses */}
+          <View style={styles.diagnosesSection}>
+            <View style={styles.diagnosesHeader}>
+              <Text style={styles.diagnosesTitle}>Recent Diagnose</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeAll}>See all</Text>
+              </TouchableOpacity>
             </View>
-          ))}
-        </View>
-      </ScrollView>
+
+            {[
+              { name: "Powder Mildew", plant: "Spinach", time: "2h ago" },
+              { name: "Bacterial Spot", plant: "Carrot", time: "Jul 3, 2024" },
+              { name: "Blight", plant: "Apple", time: "Jun 24, 2024" },
+            ].map((item, index) => (
+              <View key={index} style={styles.diagnoseItem}>
+                <View style={styles.diagnoseIcon}>
+                  <Icon name="leaf" size={20} color="#4CAF50" />
+                </View>
+                <View style={styles.diagnoseInfo}>
+                  <Text style={styles.diagnoseName}>{item.name}</Text>
+                  <Text style={styles.diagnosePlant}>{item.plant}</Text>
+                </View>
+                <Text style={styles.diagnoseTime}>{item.time}</Text>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+
+        {/* Floating Analysis Button */}
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={() => navigation.navigate("ScanCamera")}
+        >
+          <Icon name="magnify" size={24} color="#FFFFFF" />
+          <Text style={styles.floatingButtonText}>Analysis</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Bottom Navigation */}
       <Surface style={styles.bottomNav}>
@@ -224,6 +251,8 @@ const HomeScreen = () => {
     </SafeAreaView>
   );
 };
+
+export default HomeScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -267,22 +296,32 @@ const styles = StyleSheet.create({
   weatherCard: {
     backgroundColor: "#F3F4F6",
     borderRadius: 12,
-    padding: 12,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
     marginTop: 8,
+    height: 100,
   },
   weatherContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    justifyContent: "space-between",
+    flex: 1,
+  },
+  locationText: {
+    fontSize: 16,
+    fontWeight: "400",
+    color: "#333333",
+    marginBottom: 6,
   },
   temperature: {
-    fontSize: 16,
+    fontSize: 24,
     fontWeight: "600",
     color: "#1A1A1A",
   },
   weatherDesc: {
     fontSize: 14,
     color: "#6B7280",
+    marginTop: 4,
   },
   banner: {
     margin: 16,
@@ -396,6 +435,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#6B7280",
   },
+  // Removed the old "analysisContainer"; now using absolute positioning:
+  floatingButton: {
+    position: "absolute",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    bottom: 20, // adjust as needed so it's above the bottom nav
+    alignSelf: "center", // center horizontally
+    backgroundColor: "#4CAF50",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 30,
+    elevation: 4, // for Android shadow
+    shadowColor: "#000", // for iOS shadow
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  floatingButtonText: {
+    color: "#FFFFFF",
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: "600",
+  },
   bottomNav: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -424,5 +487,3 @@ const styles = StyleSheet.create({
     color: "#4CAF50",
   },
 });
-
-export default HomeScreen;

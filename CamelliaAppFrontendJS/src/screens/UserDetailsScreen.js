@@ -1,141 +1,218 @@
-// src/screens/UserDetailsScreen.js
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
+  View,
+  Dimensions,
+  Animated,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
   Alert,
   ScrollView,
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
-import { Button, TextInput, Text } from "react-native-paper";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { useTranslation } from "react-i18next";
+import { Text, TextInput, Button } from "react-native-paper";
+import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
-
 import customTheme from "../utils/theme";
-import MessageDialog from "../components/MessageDialog"; // Ensure this path is correct
+import MessageDialog from "../components/MessageDialog";
 
-const UserDetailsScreen = () => {
+const { width } = Dimensions.get("window");
+
+// -------------------- Translation Utils --------------------
+
+// Language preference storage key
+const LANGUAGE_PREFERENCE_KEY = "user-language";
+
+// Supported languages (for reference)
+const languages = [
+  { code: "en", label: "English", translation: "English" },
+  { code: "hi", label: "हिन्दी", translation: "Hindi" },
+  { code: "ta", label: "தமிழ்", translation: "Tamil" },
+  { code: "ml", label: "മലയാളം", translation: "Malayalam" },
+  { code: "kn", label: "ಕನ್ನಡ", translation: "Kannada" },
+  { code: "te", label: "తెలుగు", translation: "Telugu" },
+  { code: "as", label: "অসমীয়া", translation: "Assamese" },
+];
+
+// Default texts (UI labels and error messages)
+const defaultTexts = {
+  heading: "Enter Your Details",
+  nameLabel: "Name",
+  namePlaceholder: "Enter your full name",
+  phoneLabel: "Phone Number",
+  phonePlaceholder: "Enter your mobile number",
+  streetLabel: "Street",
+  streetPlaceholder: "Street name or House number",
+  cityLabel: "City",
+  cityPlaceholder: "City / District",
+  stateLabel: "State",
+  statePlaceholder: "Enter your state",
+  countryLabel: "Country",
+  countryPlaceholder: "Country",
+  postalLabel: "Postal Code",
+  postalPlaceholder: "PIN / Zip Code",
+  submit: "Submit",
+  errorName: "Name is required.",
+  errorPhone: "Enter a valid 10-digit phone number.",
+  errorStreet: "Street is required.",
+  errorCity: "City is required.",
+  errorCountry: "Country is required.",
+  errorPostal: "Postal Code is required.",
+  errorCoordinates: "Invalid coordinates. Please ensure location is correct.",
+  errorInvalidLocation: "Invalid location data. Please enter address manually.",
+  errorUnableFetch:
+    "Unable to fetch address from location. Please enter manually.",
+  errorFetchingAddress: "An error occurred while fetching your address.",
+  errorSubmit: "An error occurred while saving your data.",
+  errorRegister: "Failed to register user.",
+};
+
+// Helper function to translate text using the MyMemory API
+const translateText = async (text, targetLang) => {
+  try {
+    if (targetLang === "en") return text;
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(
+      text
+    )}&langpair=en|${targetLang}`;
+    console.log(`Translating: "${text}" to ${targetLang}`);
+    const response = await fetch(url);
+    const data = await response.json();
+    console.log(`Result: "${data.responseData.translatedText}"`);
+    return data.responseData.translatedText || text;
+  } catch (error) {
+    console.error("Translation error:", error);
+    return text;
+  }
+};
+
+// -------------------- Main Form Component --------------------
+
+const FormScreen = () => {
   const navigation = useNavigation();
-  const route = useRoute();
-  const { location } = route.params || {}; // If location is passed from a previous screen
-  const { t } = useTranslation();
 
-  // State variables for user input
-  const [name, setName] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [street, setStreet] = useState("");
-  const [city, setCity] = useState("");
-  const [stateField, setStateField] = useState("");
-  const [country, setCountry] = useState("");
-  const [postalCode, setPostalCode] = useState("");
+  // Form state
+  const [formData, setFormData] = useState({
+    name: "",
+    phoneNumber: "",
+    street: "",
+    city: "",
+    stateField: "",
+    country: "",
+    postalCode: "",
+  });
   const [coordinates, setCoordinates] = useState({ latitude: 0, longitude: 0 });
-
-  // Form & status states
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingAddress, setIsLoadingAddress] = useState(true);
 
-  // Error dialog states
+  // Dialog state
   const [errorDialogVisible, setErrorDialogVisible] = useState(false);
   const [errorDialogMessage, setErrorDialogMessage] = useState("");
 
+  // Translation state
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
+  const [translatedTexts, setTranslatedTexts] = useState(defaultTexts);
+  const [isTranslating, setIsTranslating] = useState(false);
+
+  // Header animation ref
+  const headerAnim = useRef(new Animated.Value(0)).current;
+
+  // Load language preference
   useEffect(() => {
-    // This effect runs once on component mount or when `location` changes
-    const fetchAddress = async () => {
-      // For Web, skip reverse-geocoding (Expo SDK 49+ no longer supports it)
-      if (Platform.OS === "web") {
-        console.log(
-          "[fetchAddress] Running on web: skipping reverse-geocoding"
-        );
-        setIsLoadingAddress(false);
-        return;
-      }
-
-      // On iOS/Android, attempt to fetch address
-      console.log(
-        "[fetchAddress] Attempting location permission & reverse-geocoding..."
-      );
-      const hasPermission = await requestLocationPermission();
-      if (!hasPermission) {
-        console.log(
-          "[fetchAddress] Permission denied: skipping reverse-geocoding"
-        );
-        setIsLoadingAddress(false);
-        return;
-      }
-
+    const getLanguage = async () => {
       try {
-        if (!location || !location.latitude || !location.longitude) {
-          console.log(
-            "[fetchAddress] Invalid location data received:",
-            location
-          );
-          showErrorDialog(
-            "Invalid location data. Please enter address manually."
-          );
+        const lang = await AsyncStorage.getItem(LANGUAGE_PREFERENCE_KEY);
+        if (lang) setSelectedLanguage(lang);
+      } catch (err) {
+        console.error("Error fetching language:", err);
+      }
+    };
+    getLanguage();
+  }, []);
+
+  // Fetch translations if language is not English
+  useEffect(() => {
+    const fetchTranslations = async () => {
+      if (selectedLanguage === "en") {
+        setTranslatedTexts(defaultTexts);
+        return;
+      }
+      setIsTranslating(true);
+      try {
+        const translations = {};
+        for (const [key, value] of Object.entries(defaultTexts)) {
+          translations[key] = await translateText(value, selectedLanguage);
+        }
+        setTranslatedTexts(translations);
+      } catch (error) {
+        console.error("Error translating texts:", error);
+      } finally {
+        setIsTranslating(false);
+      }
+    };
+    fetchTranslations();
+  }, [selectedLanguage]);
+
+  // Animate header on mount
+  useEffect(() => {
+    Animated.timing(headerAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  // Fetch address from device location
+  useEffect(() => {
+    const fetchAddress = async () => {
+      if (Platform.OS === "web") {
+        setIsLoadingAddress(false);
+        return;
+      }
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
           setIsLoadingAddress(false);
           return;
         }
-
-        // Reverse geocoding
-        console.log("[fetchAddress] Reverse geocoding coords:", location);
+        const location = await Location.getCurrentPositionAsync({});
+        if (!location || !location.coords) {
+          showErrorDialog(translatedTexts.errorInvalidLocation);
+          setIsLoadingAddress(false);
+          return;
+        }
+        const { latitude, longitude } = location.coords;
         const addressArray = await Location.reverseGeocodeAsync({
-          latitude: location.latitude,
-          longitude: location.longitude,
+          latitude,
+          longitude,
         });
-        console.log("[fetchAddress] reverseGeocodeAsync result:", addressArray);
-
         if (addressArray.length > 0) {
           const addr = addressArray[0];
-          setStreet(addr.street || "");
-          setCity(addr.city || addr.town || addr.village || "");
-          setStateField(addr.region || addr.state || "");
-          setCountry(addr.country || "");
-          setPostalCode(addr.postalCode || "");
+          setFormData((prev) => ({
+            ...prev,
+            street: addr.street || "",
+            city: addr.city || addr.town || addr.village || "",
+            stateField: addr.region || addr.state || "",
+            country: addr.country || "",
+            postalCode: addr.postalCode || "",
+          }));
           setCoordinates({
-            // If the reverse geocode result has lat/long, use them; otherwise fallback
-            latitude: addr.latitude || location.latitude,
-            longitude: addr.longitude || location.longitude,
+            latitude: addr.latitude || latitude,
+            longitude: addr.longitude || longitude,
           });
         } else {
-          console.log("[fetchAddress] No address found for coords:", location);
-          showErrorDialog(
-            "Unable to fetch address from location. Please enter manually."
-          );
+          showErrorDialog(translatedTexts.errorUnableFetch);
         }
       } catch (error) {
-        console.log("[fetchAddress] Error:", error);
-        showErrorDialog("An error occurred while fetching your address.");
+        showErrorDialog(translatedTexts.errorFetchingAddress);
       } finally {
         setIsLoadingAddress(false);
       }
     };
-
     fetchAddress();
-  }, [location]);
-
-  // Helper to request location permission
-  const requestLocationPermission = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permission Denied",
-          "Location access is needed to auto-fetch your address. Please grant permission or enter address manually.",
-          [{ text: "OK" }]
-        );
-        return false;
-      }
-      return true;
-    } catch (err) {
-      console.log("[requestLocationPermission] Error:", err);
-      return false;
-    }
-  };
+  }, [translatedTexts]);
 
   // Helper to show error dialog
   const showErrorDialog = (message) => {
@@ -145,314 +222,322 @@ const UserDetailsScreen = () => {
 
   const closeErrorDialog = () => setErrorDialogVisible(false);
 
-  // Validate user input
-  const validate = () => {
+  // Input handler
+  const handleInputChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+  };
+
+  // Validate entire form
+  const validateAll = () => {
     let isValid = true;
-    let tempErrors = {};
-
-    if (!name.trim()) {
-      tempErrors.name = "Name is required.";
+    const newErrors = {};
+    if (!formData.name.trim()) {
+      newErrors.name = translatedTexts.errorName;
       isValid = false;
     }
-
     if (
-      !phoneNumber ||
-      phoneNumber.length !== 10 ||
-      !/^\d{10}$/.test(phoneNumber)
+      !formData.phoneNumber ||
+      formData.phoneNumber.length !== 10 ||
+      !/^\d{10}$/.test(formData.phoneNumber)
     ) {
-      tempErrors.phoneNumber = "Enter a valid 10-digit phone number.";
+      newErrors.phoneNumber = translatedTexts.errorPhone;
       isValid = false;
     }
-
-    if (!street.trim()) {
-      tempErrors.street = "Street is required.";
+    if (!formData.street.trim()) {
+      newErrors.street = translatedTexts.errorStreet;
       isValid = false;
     }
-
-    if (!city.trim()) {
-      tempErrors.city = "City is required.";
+    if (!formData.city.trim()) {
+      newErrors.city = translatedTexts.errorCity;
       isValid = false;
     }
-
-    if (!country.trim()) {
-      tempErrors.country = "Country is required.";
+    if (!formData.country.trim()) {
+      newErrors.country = translatedTexts.errorCountry;
       isValid = false;
     }
-
-    if (!postalCode.trim()) {
-      tempErrors.postalCode = "Postal Code is required.";
+    if (!formData.postalCode.trim()) {
+      newErrors.postalCode = translatedTexts.errorPostal;
       isValid = false;
     }
-
-    // Validate coordinates
     if (coordinates.latitude === 0 || coordinates.longitude === 0) {
-      tempErrors.coordinates =
-        "Invalid coordinates. Please ensure location is correct.";
+      newErrors.coordinates = translatedTexts.errorCoordinates;
       isValid = false;
     }
-
-    setErrors(tempErrors);
+    setErrors(newErrors);
     return isValid;
   };
 
-  // Handle submission
+  // Form submission handler
   const handleSubmit = async () => {
-    if (!validate()) {
-      Alert.alert("Validation Error", "Please correct the highlighted fields.");
+    Keyboard.dismiss();
+    if (!validateAll()) {
+      Alert.alert(
+        translatedTexts.heading,
+        "Please complete all required fields correctly."
+      );
       return;
     }
-
     setIsSubmitting(true);
-
     try {
-      // Prepare data
       const userData = {
-        name,
-        phoneNumber,
+        name: formData.name,
+        phoneNumber: formData.phoneNumber,
         location: {
-          street,
-          city,
-          state: stateField,
-          country,
-          postalCode,
+          street: formData.street,
+          city: formData.city,
+          state: formData.stateField,
+          country: formData.country,
+          postalCode: formData.postalCode,
           coordinates,
         },
       };
-
       console.log("[handleSubmit] Submitting User Data:", userData);
-
-      const API_ENDPOINT = "http://192.168.55.219:5000/api/auth/register";
-
-      console.log("[handleSubmit] Sending POST to:", API_ENDPOINT);
-
+      const API_ENDPOINT = "http://192.168.129.219:5000/api/auth/register";
       const response = await fetch(API_ENDPOINT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
       });
-
-      console.log("[handleSubmit] Response status:", response.status);
-
       const responseData = await response.json();
-      console.log("[handleSubmit] Response JSON:", JSON.stringify(userData));
-
       if (response.ok) {
-        // Optionally store data in AsyncStorage
         await AsyncStorage.setItem("user", JSON.stringify(userData));
-        console.log("OTP pathuko", responseData.otp);
-        console.log("ithaanda user", await AsyncStorage.getItem("user"));
         Alert.alert(
-          "Registration Successful",
+          translatedTexts.heading,
           "You have registered successfully.",
           [
             {
               text: "OK",
-              onPress: () => navigation.navigate("OTPScreen", { phoneNumber }),
+              onPress: () =>
+                navigation.navigate("OTPScreen", {
+                  phoneNumber: formData.phoneNumber,
+                }),
             },
-          ] // Adjust navigation as desired
+          ]
         );
       } else {
-        showErrorDialog(responseData.message || "Failed to register user.");
+        showErrorDialog(responseData.message || translatedTexts.errorRegister);
       }
     } catch (error) {
       console.log("[handleSubmit] Error during submission:", error);
-      showErrorDialog("An error occurred while saving your data.");
+      showErrorDialog(translatedTexts.errorSubmit);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // While translations are loading, show a full-screen loader
+  if (isTranslating) {
+    return (
+      <View style={styles.loadingOverlay}>
+        <ActivityIndicator size="large" color={customTheme.colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      style={styles.keyboardAvoidingView}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.heading}>Enter Your Details</Text>
-
-        {/* Name */}
+      {/* Solid background using theme color */}
+      <View style={styles.background} />
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        <Animated.Text
+          style={[
+            styles.heading,
+            {
+              opacity: headerAnim,
+              transform: [
+                {
+                  translateY: headerAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [20, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          {translatedTexts.heading}
+        </Animated.Text>
         <TextInput
-          label="Name"
-          value={name}
-          onChangeText={setName}
           mode="outlined"
+          label={translatedTexts.nameLabel}
+          value={formData.name}
+          onChangeText={(text) => handleInputChange("name", text)}
+          placeholder={translatedTexts.namePlaceholder}
           style={styles.input}
-          placeholder="Enter your full name"
+          theme={{ colors: { primary: customTheme.colors.primary } }}
           error={!!errors.name}
         />
         {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
-
-        {/* Phone Number */}
         <TextInput
-          label="Phone Number"
-          value={phoneNumber}
-          onChangeText={setPhoneNumber}
           mode="outlined"
+          label={translatedTexts.phoneLabel}
+          value={formData.phoneNumber}
+          onChangeText={(text) => handleInputChange("phoneNumber", text)}
+          placeholder={translatedTexts.phonePlaceholder}
           keyboardType="number-pad"
           maxLength={10}
           style={styles.input}
-          placeholder="Enter your mobile number"
+          theme={{ colors: { primary: customTheme.colors.primary } }}
           error={!!errors.phoneNumber}
         />
         {errors.phoneNumber && (
           <Text style={styles.errorText}>{errors.phoneNumber}</Text>
         )}
-
-        {/* Street */}
         <TextInput
-          label="Street"
-          value={street}
-          onChangeText={setStreet}
           mode="outlined"
-          style={styles.input}
+          label={translatedTexts.streetLabel}
+          value={formData.street}
+          onChangeText={(text) => handleInputChange("street", text)}
           placeholder={
             isLoadingAddress
               ? "Fetching location..."
-              : "Street name or House number"
+              : translatedTexts.streetPlaceholder
           }
-          editable={Platform.OS === "web" || !isLoadingAddress}
+          style={styles.input}
+          theme={{ colors: { primary: customTheme.colors.primary } }}
           error={!!errors.street}
+          editable={Platform.OS === "web" || !isLoadingAddress}
         />
         {errors.street && <Text style={styles.errorText}>{errors.street}</Text>}
-
-        {/* City */}
         <TextInput
-          label="City"
-          value={city}
-          onChangeText={setCity}
           mode="outlined"
-          style={styles.input}
+          label={translatedTexts.cityLabel}
+          value={formData.city}
+          onChangeText={(text) => handleInputChange("city", text)}
           placeholder={
-            isLoadingAddress ? "Fetching location..." : "City / District"
+            isLoadingAddress
+              ? "Fetching location..."
+              : translatedTexts.cityPlaceholder
           }
-          editable={Platform.OS === "web" || !isLoadingAddress}
+          style={styles.input}
+          theme={{ colors: { primary: customTheme.colors.primary } }}
           error={!!errors.city}
+          editable={Platform.OS === "web" || !isLoadingAddress}
         />
         {errors.city && <Text style={styles.errorText}>{errors.city}</Text>}
-
-        {/* State */}
         <TextInput
-          label="State"
-          value={stateField}
-          onChangeText={setStateField}
           mode="outlined"
+          label={translatedTexts.stateLabel}
+          value={formData.stateField}
+          onChangeText={(text) => handleInputChange("stateField", text)}
+          placeholder={translatedTexts.statePlaceholder}
           style={styles.input}
-          placeholder="Enter your state"
+          theme={{ colors: { primary: customTheme.colors.primary } }}
           editable={Platform.OS === "web" || !isLoadingAddress}
         />
-        {/* Not mandatory by default, so no error message here. If needed, add one. */}
-
-        {/* Country */}
         <TextInput
-          label="Country"
-          value={country}
-          onChangeText={setCountry}
           mode="outlined"
+          label={translatedTexts.countryLabel}
+          value={formData.country}
+          onChangeText={(text) => handleInputChange("country", text)}
+          placeholder={
+            isLoadingAddress
+              ? "Fetching location..."
+              : translatedTexts.countryPlaceholder
+          }
           style={styles.input}
-          placeholder={isLoadingAddress ? "Fetching location..." : "Country"}
-          editable={Platform.OS === "web" || !isLoadingAddress}
+          theme={{ colors: { primary: customTheme.colors.primary } }}
           error={!!errors.country}
+          editable={Platform.OS === "web" || !isLoadingAddress}
         />
         {errors.country && (
           <Text style={styles.errorText}>{errors.country}</Text>
         )}
-
-        {/* Postal Code */}
         <TextInput
-          label="Postal Code"
-          value={postalCode}
-          onChangeText={setPostalCode}
           mode="outlined"
+          label={translatedTexts.postalLabel}
+          value={formData.postalCode}
+          onChangeText={(text) => handleInputChange("postalCode", text)}
+          placeholder={
+            isLoadingAddress
+              ? "Fetching location..."
+              : translatedTexts.postalPlaceholder
+          }
           keyboardType="number-pad"
           style={styles.input}
-          placeholder={
-            isLoadingAddress ? "Fetching location..." : "PIN / Zip Code"
-          }
-          editable={Platform.OS === "web" || !isLoadingAddress}
+          theme={{ colors: { primary: customTheme.colors.primary } }}
           error={!!errors.postalCode}
+          editable={Platform.OS === "web" || !isLoadingAddress}
         />
         {errors.postalCode && (
           <Text style={styles.errorText}>{errors.postalCode}</Text>
         )}
-
-        {/* Submit Button or Loader */}
-        {isSubmitting ? (
-          <ActivityIndicator
-            size="large"
-            color={customTheme.colors.primary}
-            style={styles.registerLoader}
-          />
-        ) : (
-          <Button
-            mode="contained"
-            onPress={handleSubmit}
-            style={styles.button}
-            contentStyle={styles.buttonContent}
-            labelStyle={styles.buttonLabel}
-            disabled={isSubmitting}
-          >
-            Submit
-          </Button>
-        )}
-
-        {/* Error Dialog */}
-        <MessageDialog
-          visible={errorDialogVisible}
-          onDismiss={closeErrorDialog}
-          title="Error"
-          message={errorDialogMessage}
-          buttonLabel="OK"
-        />
+        <Button
+          mode="contained"
+          onPress={handleSubmit}
+          loading={isSubmitting}
+          disabled={isSubmitting}
+          style={styles.submitButton}
+        >
+          {translatedTexts.submit}
+        </Button>
       </ScrollView>
+      <MessageDialog
+        visible={errorDialogVisible}
+        onDismiss={closeErrorDialog}
+        title="Error"
+        message={errorDialogMessage}
+        buttonLabel="OK"
+      />
+      {isTranslating && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color={customTheme.colors.primary} />
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 };
 
-export default UserDetailsScreen;
+export default FormScreen;
 
+// -------------------- Styles --------------------
 const styles = StyleSheet.create({
-  keyboardAvoidingView: {
-    flex: 1,
-  },
   container: {
-    flexGrow: 1,
+    flex: 1,
     backgroundColor: customTheme.colors.background,
+  },
+  background: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: customTheme.colors.background, // Solid background from theme
+  },
+  contentContainer: {
     padding: 20,
-    justifyContent: "center",
+    paddingTop: 60,
+    paddingBottom: 60,
   },
   heading: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: "bold",
-    color: customTheme.colors.text,
+    color: customTheme.colors.primary,
+    marginBottom: 30,
     textAlign: "center",
-    marginBottom: 20,
+    opacity: 0, // initial opacity for animation
   },
   input: {
-    marginBottom: 10,
-    backgroundColor: customTheme.colors.surface,
-  },
-  button: {
-    marginTop: 20,
-    alignSelf: "center",
-    backgroundColor: customTheme.colors.primary,
-    borderRadius: 25,
-    width: "50%",
-  },
-  buttonContent: {
-    paddingVertical: 5,
-    paddingHorizontal: 24,
-  },
-  buttonLabel: {
-    fontSize: 16,
-    color: customTheme.colors.surface,
-    fontWeight: "bold",
-  },
-  registerLoader: {
-    marginTop: 24,
+    marginBottom: 15,
+    backgroundColor: "white",
   },
   errorText: {
     color: "red",
     marginBottom: 10,
-    marginLeft: 4,
+    textAlign: "center",
+  },
+  submitButton: {
+    marginTop: 20,
+    backgroundColor: customTheme.colors.primary,
+    borderRadius: 30,
+    paddingVertical: 10,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
