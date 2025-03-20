@@ -145,7 +145,7 @@ const OTPScreen = () => {
 
     try {
       // Replace with your actual backend API endpoint
-      const API_ENDPOINT = "http://192.168.251.219:5000/api/auth/verify-otp";
+      const API_ENDPOINT = "http://192.168.29.144:5000/api/auth/verify-otp";
       const response = await fetch(API_ENDPOINT, {
         method: "POST",
         headers: {

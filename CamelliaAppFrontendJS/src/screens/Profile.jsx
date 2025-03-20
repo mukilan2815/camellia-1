@@ -70,13 +70,17 @@ const ProfileScreen = ({ navigation }) => {
 
   // Menu items
   const menuItems = [
-    { icon: "heart-outline", title: "Favourites", hasArrow: true },
+    // { icon: "heart-outline", title: "Favourites", hasArrow: true },
     { icon: "download-outline", title: "Downloads", hasArrow: true },
     { icon: "language-outline", title: "Language", hasArrow: true },
     { icon: "location-outline", title: "Location", hasArrow: true },
     { icon: "card-outline", title: "Subscription", hasArrow: true },
-    { icon: "color-palette-outline", title: "Color scheme", hasArrow: true },
-    { icon: "time-outline", title: "Color history", hasArrow: true },
+    {
+      icon: "headset-outline",
+      title: "User Feedback & Support",
+      hasArrow: true,
+    },
+    { icon: "scan-outline", title: "Drone Service", hasArrow: true },
     { icon: "log-out-outline", title: "Log out", hasArrow: false },
   ];
 
@@ -128,19 +132,6 @@ const ProfileScreen = ({ navigation }) => {
             )}
           </TouchableOpacity>
         ))}
-      </View>
-
-      {/* Navigation Footer */}
-      <View style={styles.navFooter}>
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="home-outline" size={24} color="#333" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="search-outline" size={24} color="#333" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navButton}>
-          <Ionicons name="close-outline" size={24} color="#ff3b30" />
-        </TouchableOpacity>
       </View>
     </>
   );

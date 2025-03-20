@@ -69,10 +69,10 @@ const WelcomeScreen = ({ navigation }) => {
     // Check AsyncStorage for user data
     const checkUserData = async () => {
       const userData = await AsyncStorage.getItem("user");
-      // if (userData) {
-      //   navigation.navigate("Home");
-      //   return;
-      // }
+      if (userData) {
+        navigation.navigate("Home");
+        return;
+      }
     };
     checkUserData();
 

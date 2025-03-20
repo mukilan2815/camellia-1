@@ -23,6 +23,8 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import * as Location from "expo-location";
 import axios from "axios";
 import { LineChart } from "react-native-chart-kit";
+import * as Print from "expo-print";
+import { shareAsync } from "expo-sharing";
 
 const GEMINI_API_KEY = "AIzaSyAt149CIT6Nhw9FSXTSZGKNLbqXKfLkSCQ";
 const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
@@ -37,7 +39,7 @@ const parseMessageText = (text) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return {
         id: index,
-        text: part.slice(2, -2), 
+        text: part.slice(2, -2),
         isBold: true,
       };
     }
@@ -407,6 +409,374 @@ const ResultScreen = ({ route, navigation }) => {
       },
     })
   ).current;
+  const handleGenerateReport = async () => {
+    try {
+      setLoading(true);
+
+      // Format the current date
+      const currentDate = new Date();
+      const formattedDate = currentDate.toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      const formattedTime = currentDate.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
+      // Format confidence percentage
+      const confidencePercentage = diseaseInfo.confidence
+        ? `${(diseaseInfo.confidence * 100).toFixed(1)}%`
+        : "N/A";
+
+      // Format location data
+      let locationHtml = "";
+      if (location) {
+        const lat = location.coords.latitude.toFixed(4);
+        const lon = location.coords.longitude.toFixed(4);
+
+        let addressText = "Unknown location";
+        if (address) {
+          const addressParts = [];
+          if (address.name) addressParts.push(address.name);
+          if (address.street) addressParts.push(address.street);
+          if (address.city) addressParts.push(address.city);
+          if (address.region) addressParts.push(address.region);
+          if (address.country) addressParts.push(address.country);
+          addressText = addressParts.join(", ");
+        }
+
+        locationHtml = `
+          <div class="info-section">
+            <h2>Location Information</h2>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Coordinates:</span>
+                <span class="info-value">${lat}, ${lon}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Address:</span>
+                <span class="info-value">${addressText}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Format weather data
+      let weatherHtml = "";
+      if (weather) {
+        const temp = weather.main.temp;
+        const humidity = weather.main.humidity;
+        const condition =
+          weather.weather && weather.weather[0]
+            ? weather.weather[0].description
+            : "Unknown";
+
+        weatherHtml = `
+          <div class="info-section">
+            <h2>Weather Conditions</h2>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Temperature:</span>
+                <span class="info-value">${temp}°C</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Humidity:</span>
+                <span class="info-value">${humidity}%</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Condition:</span>
+                <span class="info-value">${condition}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // Format treatments
+      let treatmentsHtml = "";
+      if (diseaseInfo.treatments) {
+        const { chemical, biological, mechanical } = diseaseInfo.treatments;
+
+        const formatTreatmentList = (items) => {
+          if (!items || items.length === 0) return "<p>None recommended</p>";
+          return `<ul>${items.map((item) => `<li>${item}</li>`).join("")}</ul>`;
+        };
+
+        treatmentsHtml = `
+          <div class="info-section">
+            <h2>Recommended Treatments</h2>
+            
+            <div class="treatment-section">
+              <h3>Chemical Control</h3>
+              ${formatTreatmentList(chemical)}
+            </div>
+            
+            <div class="treatment-section">
+              <h3>Biological Control</h3>
+              ${formatTreatmentList(biological)}
+            </div>
+            
+            <div class="treatment-section">
+              <h3>Mechanical Control</h3>
+              ${formatTreatmentList(mechanical)}
+            </div>
+          </div>
+        `;
+      }
+
+      // Add notes if available
+      let notesHtml = "";
+      if (diseaseInfo.note) {
+        notesHtml = `
+          <div class="info-section note-section">
+            <h2>Additional Notes</h2>
+            <p>${diseaseInfo.note}</p>
+          </div>
+        `;
+      }
+
+      // Create the HTML template for the PDF
+      const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <title>Camellia Disease Detection Report</title>
+          <style>
+            body {
+              font-family: 'Helvetica', 'Arial', sans-serif;
+              line-height: 1.6;
+              color: #333;
+              margin: 0;
+              padding: 0;
+              background-color: #f9f9f9;
+            }
+            
+            .container {
+              max-width: 800px;
+              margin: 0 auto;
+              background: white;
+              padding: 20px;
+              box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            }
+            
+            .header {
+              text-align: center;
+              padding-bottom: 20px;
+              border-bottom: 2px solid #4CAF50;
+              margin-bottom: 30px;
+            }
+            
+            .logo {
+              font-size: 28px;
+              font-weight: bold;
+              color: #4CAF50;
+              margin-bottom: 5px;
+            }
+            
+            .subtitle {
+              font-size: 16px;
+              color: #666;
+            }
+            
+            .timestamp {
+              font-size: 14px;
+              color: #888;
+              margin-top: 10px;
+            }
+            
+            .main-content {
+              display: flex;
+              margin-bottom: 30px;
+            }
+            
+            .image-container {
+              flex: 0 0 200px;
+              margin-right: 20px;
+            }
+            
+            .image-container img {
+              width: 100%;
+              border-radius: 8px;
+              border: 1px solid #ddd;
+            }
+            
+            .disease-info {
+              flex: 1;
+            }
+            
+            h1 {
+              color: #333;
+              margin-top: 0;
+              font-size: 24px;
+            }
+            
+            h2 {
+              color: #4CAF50;
+              font-size: 18px;
+              margin-top: 25px;
+              margin-bottom: 15px;
+              padding-bottom: 8px;
+              border-bottom: 1px solid #eee;
+            }
+            
+            h3 {
+              color: #555;
+              font-size: 16px;
+              margin-top: 15px;
+              margin-bottom: 10px;
+            }
+            
+            .info-section {
+              margin-bottom: 25px;
+            }
+            
+            .info-grid {
+              display: grid;
+              grid-template-columns: repeat(2, 1fr);
+              gap: 15px;
+            }
+            
+            .info-item {
+              margin-bottom: 10px;
+            }
+            
+            .info-label {
+              font-weight: bold;
+              color: #555;
+            }
+            
+            .info-value {
+              color: #333;
+            }
+            
+            .confidence-bar-container {
+              width: 100%;
+              height: 20px;
+              background-color: #eee;
+              border-radius: 10px;
+              margin-top: 10px;
+              overflow: hidden;
+            }
+            
+            .confidence-bar {
+              height: 100%;
+              background-color: #4CAF50;
+              border-radius: 10px;
+            }
+            
+            .treatment-section {
+              margin-bottom: 20px;
+            }
+            
+            ul {
+              margin-top: 5px;
+              padding-left: 20px;
+            }
+            
+            li {
+              margin-bottom: 5px;
+            }
+            
+            .note-section {
+              background-color: #f8f9fa;
+              padding: 15px;
+              border-radius: 8px;
+              border-left: 4px solid #4CAF50;
+            }
+            
+            .footer {
+              text-align: center;
+              margin-top: 40px;
+              padding-top: 20px;
+              border-top: 1px solid #eee;
+              color: #888;
+              font-size: 12px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="logo">Camellia</div>
+              <div class="subtitle">Tea Leaf Disease Detection Report</div>
+              <div class="timestamp">Generated on ${formattedDate} at ${formattedTime}</div>
+            </div>
+            
+            <div class="main-content">
+              <div class="image-container">
+                <img src="${diseaseInfo.image}" alt="Disease Image">
+              </div>
+              
+              <div class="disease-info">
+                <h1>${diseaseInfo.name || "Unknown Disease"}</h1>
+                
+                <div class="info-item">
+                  <span class="info-label">Confidence:</span>
+                  <span class="info-value">${confidencePercentage}</span>
+                  <div class="confidence-bar-container">
+                    <div class="confidence-bar" style="width: ${confidencePercentage};"></div>
+                  </div>
+                </div>
+                
+                <div class="info-section">
+                  <h2>Description</h2>
+                  <p>${
+                    diseaseInfo.description || "No description available."
+                  }</p>
+                </div>
+              </div>
+            </div>
+            
+            ${treatmentsHtml}
+            
+            ${locationHtml}
+            
+            ${weatherHtml}
+            
+            ${notesHtml}
+            
+            <div class="footer">
+              <p>© ${currentDate.getFullYear()} Camellia - Tea Leaf Disease Detection System</p>
+              <p>This report is generated automatically and should be reviewed by a professional.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Generate the PDF file
+      const { uri } = await Print.printToFileAsync({
+        html,
+        base64: false,
+        width: 612, // Standard US Letter width in points (8.5 inches)
+        height: 792, // Standard US Letter height in points (11 inches)
+      });
+
+      console.log("PDF generated at:", uri);
+
+      // Share the PDF file
+      await shareAsync(uri, {
+        UTI: ".pdf",
+        mimeType: "application/pdf",
+        dialogTitle: "Share Disease Detection Report",
+      });
+
+      setLoading(false);
+      Alert.alert(
+        "Report Generated",
+        "Your detailed disease detection report has been generated successfully."
+      );
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      setLoading(false);
+      Alert.alert("Error", "Failed to generate the report. Please try again.");
+    }
+  };
 
   // Request location permission and get current location details
   useEffect(() => {
@@ -869,7 +1239,6 @@ const ResultScreen = ({ route, navigation }) => {
           <Icon name="dots-horizontal" size={24} color="#000" />
         </TouchableOpacity>
       </View>
-
       {/* Main Content */}
       <ScrollView
         style={styles.scrollContainer}
@@ -1016,8 +1385,6 @@ const ResultScreen = ({ route, navigation }) => {
           </View>
         )}
       </ScrollView>
-
-      {/* Bottom Buttons */}
       <View style={styles.fixedButtonContainer}>
         <TouchableOpacity
           style={styles.regenerateButton}
@@ -1028,8 +1395,13 @@ const ResultScreen = ({ route, navigation }) => {
         <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
           <Text style={styles.shareText}>Share</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.shareButton, { backgroundColor: "#FF5252" }]}
+          onPress={handleGenerateReport}
+        >
+          <Text style={styles.shareText}>Report</Text>
+        </TouchableOpacity>
       </View>
-
       {/* Image Modal */}
       <Modal
         animationType="fade"
@@ -1053,7 +1425,6 @@ const ResultScreen = ({ route, navigation }) => {
           </View>
         </View>
       </Modal>
-
       {/* Enhanced Chatbot Modal with Resizing */}
       <Modal
         animationType="slide"
@@ -1272,7 +1643,6 @@ const ResultScreen = ({ route, navigation }) => {
           </Animated.View>
         </View>
       </Modal>
-
       {/* Message Actions Menu */}
       <MessageActionsMenu
         visible={messageActionsVisible}
@@ -1281,7 +1651,6 @@ const ResultScreen = ({ route, navigation }) => {
         onCopy={handleCopyMessage}
         onDelete={handleDeleteMessage}
       />
-
       {/* Floating Chatbot Icon with Pulse Animation */}
       <Animated.View
         style={[
